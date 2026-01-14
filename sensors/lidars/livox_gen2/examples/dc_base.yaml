@@ -1,0 +1,29 @@
+services:
+  livox_gen2_lidar_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    volumes:
+      - ./${JSON_FILE}:/tmp/config.json
+      - ./${YAML_FILE}:/tmp/params.yaml
+      - ./cyclonedds_config_no_peer.xml:/tmp/cyclonedds_config_no_peer.xml
+      - ./exec_launch_file.sh:/tmp/exec_launch_file.sh
+      - ../eut_sensor.launch.py:/home/sensor/workspace/src/livox_ros_driver2/launch_ROS2/eut_sensor.launch.py
+    environment:
+      NAMESPACE: /test # Optional, default is ''
+      ROBOT_NAME: robot # Required
+      CONFIG_FILE: /tmp/config.json # Required
+      PARAMS_FILE: /tmp/params.yaml # Required
+      # TOPIC_REMAPPINGS is optional.
+      TOPIC_REMAPPINGS: "livox/lidar_192_168_1_193:=front_lidar/scan/points,livox/imu_192_168_1_193:=front_lidar/imu/data"
+      # NODE_OPTIONS is optional.
+      # Attention should be paid to the node's name given here, 'livox_gen2_lidar_ros2_driver'.
+      # If name is not provided the default value used for the node's name is 'livox_gen2_lidar_ros2_driver'.
+      NODE_OPTIONS: "name=livox_gen2_lidar_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      # LOGGING_OPTIONS is optional.
+      # Attention should be paid to the loggers:
+      #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=false,disable-rosout-logs=false,disable-external-lib-logs=true"
+      ROS_DOMAIN_ID: 11
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      CYCLONEDDS_URI: file:///tmp/cyclonedds_config_no_peer.xml

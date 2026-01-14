@@ -1,0 +1,137 @@
+{
+    // lidar_log_... are configuration fields for the livox_sdk2 driver
+    "lidar_log_enable": false, // enable/disable the firmware log
+    "lidar_log_cache_size_MB": 500,
+    "lidar_log_path": "./",
+    "MID360": {
+        // The LiDAR opens the ports listed in 'lidar_net_info' and sends its packets to the IP/port
+        // values given in 'host_net_info'.
+        // The host opens the ports listed in 'host_net_info' to listen to the data sent by the LiDAR.
+        // Only the control channel ('cmd_data') is two-way; every other channel is LiDAR -> Host.
+        // Ports opened by the LiDAR
+        "lidar_net_info": {
+            // Control channel.
+            // LiDAR opens port 56100 to receive commands from host and sends replies back to host:56101.
+            // <-> bidirectional
+            "cmd_data_port": 56100,
+            // Status/error messages.
+            // LiDAR opens port 56200 to send push messages -> host:56201.
+            "push_msg_port": 56200,
+            // Point-cloud stream.
+            // LiDAR opens port 56300 to send point-cloud data -> host:56301.
+            "point_data_port": 56300,
+            // IMU packets.
+            // LiDAR opens port 56400 to send IMU data -> host:56401.
+            "imu_data_port": 56400,
+            // Firmware logs (heavy traffic if enabled).
+            // LiDAR opens port 56500 to send firmware logs -> host:56501.
+            "log_data_port": 56500
+        },
+        // Ports opened by the host PC.
+        "host_net_info": [
+            {
+                // IP addresses of all LiDARs that will talk to THIS host.
+                "lidar_ip": [
+                    "192.168.1.193",
+                    "192.168.1.194"
+                ],
+                // IP address of the network interface on the host that will receive the LiDAR packets.
+                "host_ip": "192.168.1.2",
+                // Host opens port 56101 to send commands -> LiDAR:56100 and to receive the replies
+                // host:56101 <- LiDAR:56100.
+                "cmd_data_port": 56101,
+                // Host opens port 56201 to receive push messages <- LiDAR:56200.
+                "push_msg_port": 56201,
+                // Host opens port 56301 to receive point-cloud data <- LiDAR:56300.
+                "point_data_port": 56301,
+                // Host opens port 56401 to receive IMU data <- LiDAR:56400.
+                "imu_data_port": 56401,
+                // Host opens port 56501 to receive firmware logs <- LiDAR:56500.
+                "log_data_port": 56501
+            }
+        ]
+    },
+    // --------------------------------------------------------------------------
+    // Therefore, multiple Mid-360 units can share the same five destination ports without conflict;
+    // demultiplexing happens at the application layer, not with separate ports.
+    //
+    // A single MID360 block with a lidar_ip list and one port set on the host is enough for two
+    // (or more) Mid-360 devices.
+    //
+    // The driver opens just one pair of sockets (56101–56501) and, thanks to the datagram header,
+    // routes data from both sensors without collisions.
+    //
+    // Do I need two port sets for two Mid-360 units? No.
+    //
+    // The HAP + Mid-360 example uses two sets because they are different LiDAR families with
+    // different factory port ranges (56000/57000/... versus 56100/56300/...). Each type keeps its
+    // own range and the host mirrors that range to simplify filters and firewall rules.
+    //
+    // Option A (recommended): share the host ports 56101-56501 for every Mid-360. The driver tags
+    // each packet with the LiDAR’s broadcast-code and demultiplexes internally, so you still know
+    // which sensor is which. This keeps your firewall rules, Wireshark filters, and launch files to
+    // a single set and scales cleanly as you add more devices.
+    //
+    // Option B (valid but unnecessary): create one additional entry in the 'host_net_info' array
+    // for each Mid-360 and shift every port by a fixed offset (+10, +20, ..).
+    // For instance:
+    //
+    // {
+    //   "lidar_ip": ["192.168.0.144"],
+    //   "host_ip":  "192.168.0.200",
+    //   "cmd_data_port": 56111,
+    //   "push_msg_port": 56211,
+    //   "point_data_port": 56311,
+    //   "imu_data_port": 56411,
+    //   "log_data_port": 56511
+    // }
+    //
+    // The driver will open a second socket set (56111 - 56511) and bind those ports exclusively to
+    // 192.168.0.144.  This can help external tools that insist on "one socket per sensor", but it
+    // doubles the number of firewall rules and consumes more file descriptors.  Crucially, you
+    // still keep only ONE 'MID360' block; you simply add more objects inside the array.
+    //
+    // Declaring two MID360 keys in the same JSON is wrong: JSON does not allow duplicated keys;
+    // the second block overwrites the first and only one sensor will be initialised.
+    // --------------------------------------------------------------------------
+    // From here on, the configuration fields are used in livox_ros_driver2
+    "lidar_summary_info": {
+        "lidar_type": 8
+    },
+    "lidar_configs": [
+        {
+            "ip": "192.168.1.193",
+            // 1: Cartesian coordinate data (32 bits).
+            // 2: Cartesian coordinate data (16 bits).
+            // 3: Spherical coordinate data.
+            "pcl_data_type": 1,
+            // 0: non-repeating scanning pattern mode.
+            // 1: repeating scanning pattern mode.
+            // 2: repeating scanning pattern mode (low scanning rate).
+            "pattern_mode": 0,
+            "frame_id": "{{robot_prefix}}front_livox_link",
+            "extrinsic_parameter": {
+                "roll": 0.0,
+                "pitch": 0.0,
+                "yaw": 0.0,
+                "x": 0,
+                "y": 0,
+                "z": 0
+            }
+        },
+        {
+            "ip": "192.168.1.194",
+            "pcl_data_type": 1,
+            "pattern_mode": 0,
+            "frame_id": "{{robot_prefix}}back_livox_link",
+            "extrinsic_parameter": {
+                "roll": 0.0,
+                "pitch": 0.0,
+                "yaw": 0.0,
+                "x": 0,
+                "y": 0,
+                "z": 0
+            }
+        }
+    ]
+}

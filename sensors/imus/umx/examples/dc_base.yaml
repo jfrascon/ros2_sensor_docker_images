@@ -1,0 +1,32 @@
+# https://docs.docker.com/compose/environment-variables/#the-env-file
+services:
+  um_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    volumes:
+      - ./um${UM_MODEL}_params.yaml:/tmp/params.yaml # Parameters
+      - ./cyclonedds_config_no_peer.xml:/tmp/cyclonedds_config_no_peer.xml
+      - ./exec_launch_file.sh:/tmp/exec_launch_file.sh
+      - /dev:/dev # to access ttyUSB devices
+    device_cgroup_rules:
+      - "c 188:* rwm" # 188 is ttyUSB devices
+    environment:
+      NAMESPACE: /test # Optional, default is ''
+      ROBOT_NAME: robot # Required
+      UM_MODEL: ${UM_MODEL} # Required: 6 or 7
+      PARAMS_FILE: /tmp/params.yaml # Required
+      # TOPIC_REMAPPINGS is optional.
+      TOPIC_REMAPPINGS: "imu/data:=um${UM_MODEL}/data,imu/mag:=um${UM_MODEL}/mag,imu/rpy:=um${UM_MODEL}/rpy,imu/temperature:=um${UM_MODEL}/temperature,imu/reset:=um${UM_MODEL}/reset"
+      # NODE_OPTIONS is optional.
+      # Attention should be paid to the node's name given here, 'um_ros2_driver'.
+      # If name is not provided the default value used for the node's name is 'um_ros2_driver'.
+      NODE_OPTIONS: "name=um_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      # LOGGING_OPTIONS is optional.
+      # Attention should be paid to the loggers:
+      #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
+      #  um${UM_MODEL}_driver=debug.
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true,test.robot.um_ros2_driver=debug,um${UM_MODEL}_driver=debug"
+      ROS_DOMAIN_ID: 11
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      CYCLONEDDS_URI: file:///tmp/cyclonedds_config_no_peer.xml

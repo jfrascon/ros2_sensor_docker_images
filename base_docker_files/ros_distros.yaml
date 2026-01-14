@@ -1,0 +1,9 @@
+humble:
+  ros_distro: humble
+  ros_version: 2
+  ubuntu_version: "22.04"
+
+jazzy:
+  ros_distro: jazzy
+  ros_version: 2
+  ubuntu_version: "24.04"

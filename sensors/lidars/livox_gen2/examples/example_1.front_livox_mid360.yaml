@@ -1,0 +1,10 @@
+/**/livox_gen2_lidar_ros2_driver:
+  ros__parameters:
+    xfer_format: 0 # 0: Pointcloud2 (PointXYZRTL), 1: Customized pointcloud format
+    multi_topic: 1 # 0: All lidars share the same topic, 1: One lidar one topic
+    data_src: 0 # 0: Data from raw lidar, 1: Data from lidar hub
+    publish_freq: 10.0 # frequency of publishing, 5.0, 10.0, 20.0, 50.0, etc.
+    output_data_type: 0 # 0: Publish message, 1: Output to bag file
+    lvx_file_path: "/tmp/livox_test.lvx"
+    user_config_path: "{{user_config_path}}"
+    cmdline_input_bd_code: "livox0000000001"

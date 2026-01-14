@@ -1,0 +1,34 @@
+# Attention should be paid to the node's name.
+# Check whether the name of the node is the default one or custom (See NODE_OPTIONS environment variable in
+# docker-compose file).
+/**/umx_ros2_driver:
+  ros__parameters:
+    port: /dev/ttyUSB0
+    baud: 115200
+    update_rate: 20
+    mag_updates: true
+    quat_mode: True
+    zero_gyros: True
+    frame_id: $(var robot_prefix)imu_link
+    # From https://www.pololu.com/file/0J1556/UM7%20Datasheet_v1-8_30.07.2018.pdf
+    # Accelerometer specifications (page 8)
+    # Rate noise density = 400 μg/sqrt(Hz) = 4 *10^-4 g/sqrt(Hz).
+    # Assuming an effective bandwidth of 100 Hz, the standard deviation is:
+    # linear_acceleration_stdev = 4 *10^-4 g/sqrt(Hz) * sqrt(100 Hz) = 4 *10^-3 g = 0.004 g
+    # Converting to m/s^2: 0.004 g * 9.80665 m/s^2/g = 0.0392266 m/s^2
+    linear_acceleration_stdev: 0.0392266
+    # Gyroscope specifications (page 8)
+    # Total RMS noise = 0.06 deg/s RMS = 0.06 * (3.14159 / 180.0) rad/s RMS = 0.0010471966666666666 rad/s RMS
+    angular_velocity_stdev: 0.0010471966666666666
+    # Attitude and heading specifications (page 8)
+    # Static accuracy for pitch and roll: ± 1 degree, typical*
+    # Dynamic accuracy for pitch and roll: ± 3 degrees, typical*
+    # Static accuracy for yaw: ± 3 degrees, typical*
+    # Dynamic accuracy for yaw: ± 5 degrees, typical*
+    # * Accuracy specifications depend on a variety of factors including the presence or lack of optional
+    # calibration and properties of the physical system being measured.
+    orientation_x_stdev: 0.052359878 # 3.0 * (3.14159 / 180.0)
+    orientation_y_stdev: 0.052359878 # 3.0 * (3.14159 / 180.0)
+    orientation_z_stdev: 0.087266463 # 5.0 * (3.14159 / 180.0) = 0.08726666666666667
+    tf_ned_to_enu: True
+    orientation_in_robot_frame: False

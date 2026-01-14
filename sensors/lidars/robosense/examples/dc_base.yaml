@@ -1,0 +1,25 @@
+services:
+  robosense_lidar_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    volumes:
+      - ./${CONFIG_FILE}:/tmp/config.yaml
+      - ./cyclonedds_config_no_peer.xml:/tmp/cyclonedds_config_no_peer.xml
+      - ./exec_launch_file.sh:/tmp/exec_launch_file.sh
+    environment:
+      NAMESPACE: /test # Optional, default is ''
+      ROBOT_NAME: robot # Required
+      CONFIG_FILE: /tmp/config.yaml # Optional, default is ''
+      # No remappings needed, topics are defined in the config_file.
+      # NODE_OPTIONS is optional.
+      # Attention should be paid to the node's name given here, 'robosense_lidar_ros2_driver'.
+      # If name is not provided, the default value used for the node's name is 'robosense_lidar_ros2_driver'.
+      NODE_OPTIONS: "name=robosense_lidar_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      # LOGGING_OPTIONS is optional.
+      # Attention should be paid to the loggers:
+      #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
+      ROS_DOMAIN_ID: 11
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      CYCLONEDDS_URI: file:///tmp/cyclonedds_config_no_peer.xml

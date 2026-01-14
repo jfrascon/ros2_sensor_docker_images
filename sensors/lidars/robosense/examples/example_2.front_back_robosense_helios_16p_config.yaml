@@ -1,0 +1,183 @@
+# One rslidar_sdk node can handle multiple RoboSense LiDARs.
+# Two setups are available:
+#   1. A number of RS LiDARs, each LiDAR with different IP addresses, using different msop_port and difop_port, and
+#      sending packets to the same host IP address.
+#      The configuration file for the rslidar_sdk node should contain a number of LiDAR configurations, each with its
+#      own msop_port and difop_port, ...
+#  2. A number of RS LiDARs, each LiDAR with different IP addresses, using the same msop_port and difop_port, and
+#     sending packets to the same host that has multiple IP addresses.
+# In this configuration file, we will show an example of setup 1.
+# At the end of the file, we will show the the relevant parts of the configuration file for setup 2.
+# Reference guide:
+# https://github.com/RoboSense-LiDAR/rslidar_sdk/blob/main/doc/howto/07_online_lidar_advanced_topics.md#73-multiple-lidars
+common:
+    # 0: Unused. Never set this parameter to 0.
+    # 1: LiDAR packets come from on-line LiDARs.
+    # 2: LiDAR packets come from ROS/ROS2. It is used to decode from an off-line rosbag.
+    # 3: LiDAR packets come from a PCAP bag.
+    msg_source: 1
+    # LiDAR packets will be sent to ROS/ROS2.
+    # The ROS Packet message is of a customized message type, so you can't view its content via the RViz.
+    # This option is used to record off-line Packet rosbags.
+    send_packet_ros: False
+    # The LiDAR point cloud, with format  sensor_msgs/PointCloud2, will be sent to ROS/ROS2.
+    send_point_cloud_ros: True
+lidar:
+    - driver:
+          # RS16, RS32, RSBP, RSAIRY, RSHELIOS, RSHELIOS_16P, RS128, RS80, RS48, RSP128, RSP80, RSP48, RSM1, RSM1_JUMBO,
+          # RSM2, RSM3, RSE1, RSMX.
+          lidar_type: RSHELIOS_16P
+          # The MSOP/DIFOP/IMU port, in the host, to receive packets from the LiDAR.
+          # You can configure LiDAR settings (do not get confused with driver settings, i.e this file) via webapp.
+          # You connect through a web browser to the LiDAR IP address (you must remember it!) and you will get access to
+          # the LiDAR's configuration web page. There you can change the 'device ip address', the 'device ip mask',
+          # 'the device gateway', the 'destination ip address' (host ip address), 'MSOP port number' (port in the host
+          # where the LiDAR will send the MSOP packets), 'DIFOP port number' (port in the host where the LiDAR will
+          # send the DIFOP packets), 'IMU port number' (port in the host where the LiDAR will send the IMU packets),
+          # 'horizontal fov',..
+          # If you change the MSOP port or DIFOP port in the LiDAR's settings, you must change the parameters
+          # 'msop_port' and 'difop_port' in the RS driver configuration file.
+          # If no data is received, please check these parameters.
+          msop_port: 6699
+          difop_port: 7788
+          # Only for RSAIRY, RSE1. 0 means no IMU.
+          imu_port: 0 # IMU port of LiDAR(only for RSAIRY, RSE1), 0 means no imu.
+          # Bytes of user layer. There is no user layer if it is 0.
+          user_layer_bytes: 0
+          # Bytes of tail layer. There is no tail layer if it is 0.
+          tail_layer_bytes: 0
+          # Minimum distance of point cloud.
+          min_distance: 0.2
+          # Maximum distance of point cloud.
+          max_distance: 200
+          # True: Use the LiDAR clock as the message timestamp.
+          # False: Use the system clock as the timestamp.
+          use_lidar_clock: False
+          # True: discard NAN points; False: reserve NAN points.
+          dense_points: True
+          # Stamp the point cloud with the first point or the last one.
+          # Stamp with the first point if True; stamp with the last point if False.
+          # The default value is False.
+          # These parameters are used from mechanical LiDAR.
+          ts_first_point: False
+          # Start angle of point cloud.
+          start_angle: 0
+          # End angle of point cloud.
+          end_angle: 360
+          # If False, the driver will not wait for difop packet (including LiDAR configuration data, especially angle
+          # data to calculate x, y, z), and send out the point cloud immediately.
+          # The default value is True.
+          wait_for_difop: True
+          # True: The pcap bag will repeat play.
+          # pcap_repeat: True
+          # Rate to read the pcap file.
+          # pcap_rate: 1.0
+          # The path of pcap file.
+          # pcap_path: /home/robosense/lidar.pcap # The path of pcap file
+      ros:
+          # Frame id of packet message and point cloud message.
+          ros_frame_id: "{{robot_prefix}}front_lidar_link"
+
+          # Since the 'topics' indicated nex do not start with '/', the published topics will be preffix with the
+          # '<robot_namespace>.
+
+          # Topic used to receive lidar packets from ROS.
+          ros_recv_packet_topic: front_lidar/packets
+          # Topic used to send lidar packets through ROS.
+          ros_send_packet_topic: front_lidar/packets
+          # Topic used to send imu data through ROS.
+          ros_send_imu_data_topic: front_lidar/imu/data
+          # Topic used to send point cloud through ROS.
+          ros_send_point_cloud_topic: front_lidar/scan/points
+          # QoS history depth.
+          ros_queue_length: 100
+    - driver:
+          # RS16, RS32, RSBP, RSAIRY, RSHELIOS, RSHELIOS_16P, RS128, RS80, RS48, RSP128, RSP80, RSP48, RSM1, RSM1_JUMBO,
+          # RSM2, RSM3, RSE1, RSMX.
+          lidar_type: RSHELIOS_16P
+          # The MSOP/DIFOP/IMU port, in the host, to receive packets from the LiDAR.
+          # You can configure LiDAR settings (do not get confused with driver settings, i.e this file) via webapp.
+          # You connect through a web browser to the LiDAR IP address (you must remember it!) and you will get access to
+          # the LiDAR's configuration web page. There you can change the 'device ip address', the 'device ip mask',
+          # 'the device gateway', the 'destination ip address' (host ip address), 'MSOP port number' (port in the host
+          # where the LiDAR will send the MSOP packets), 'DIFOP port number' (port in the host where the LiDAR will
+          # send the DIFOP packets), 'IMU port number' (port in the host where the LiDAR will send the IMU packets),
+          # 'horizontal fov',..
+          # If you change the MSOP port or DIFOP port in the LiDAR's settings, you must change the parameters
+          # 'msop_port' and 'difop_port' in the RS driver configuration file.
+          # If no data is received, please check these parameters.
+          msop_port: 6698
+          difop_port: 7787
+          # Only for RSAIRY, RSE1. 0 means no IMU.
+          imu_port: 0 # IMU port of LiDAR(only for RSAIRY, RSE1), 0 means no imu.
+          # Bytes of user layer. There is no user layer if it is 0.
+          user_layer_bytes: 0
+          # Bytes of tail layer. There is no tail layer if it is 0.
+          tail_layer_bytes: 0
+          # Minimum distance of point cloud.
+          min_distance: 0.2
+          # Maximum distance of point cloud.
+          max_distance: 200
+          # True: Use the LiDAR clock as the message timestamp.
+          # False: Use the system clock as the timestamp.
+          use_lidar_clock: False
+          # True: discard NAN points; False: reserve NAN points.
+          dense_points: True
+          # Stamp the point cloud with the first point or the last one.
+          # Stamp with the first point if True; stamp with the last point if False.
+          # The default value is False.
+          # These parameters are used from mechanical LiDAR.
+          ts_first_point: False
+          # Start angle of point cloud.
+          start_angle: 0
+          # End angle of point cloud.
+          end_angle: 360
+          # If False, the driver will not wait for difop packet (including LiDAR configuration data, especially angle
+          # data to calculate x, y, z), and send out the point cloud immediately.
+          # The default value is True.
+          wait_for_difop: True
+          # True: The pcap bag will repeat play.
+          # pcap_repeat: True
+          # Rate to read the pcap file.
+          # pcap_rate: 1.0
+          # The path of pcap file.
+          # pcap_path: /home/robosense/lidar.pcap # The path of pcap file
+      ros:
+          # Frame id of packet message and point cloud message.
+          ros_frame_id: "{{robot_prefix}}back_lidar_link"
+
+          # Since the 'topics' indicated nex do not start with '/', the published topics will be preffix with the
+          # '<robot_namespace>.
+
+          # Topic used to receive lidar packets from ROS.
+          ros_recv_packet_topic: back_lidar/packets
+          # Topic used to send lidar packets through ROS.
+          ros_send_packet_topic: back_lidar/packets
+          # Topic used to send imu data through ROS.
+          ros_send_imu_data_topic: back_lidar/imu/data
+          # Topic used to send point cloud through ROS.
+          ros_send_point_cloud_topic: back_lidar/scan/points
+          # QoS history depth.
+          ros_queue_length: 100
+# Note: If you use the configurion setup 2:
+# In this case, we will configure the front LiDAR through the webapp to send packets to the host IP address
+# 192.168.1.102, and the back LiDAR to send packets to the host IP address 192.168.1.103.
+# The msop_port and difop_port will be the same for both LiDARs:
+# msop_port: 6699
+# difop_port: 7788
+# You will have to use the blocks (only the relevant parts provided here to shorten the text)
+# lidar:
+# front_lidar
+#   - driver:
+#       lidar_type: RSHELIOS_16P
+#       msop_port: 6699
+#       difop_port: 7788
+#       imu_port: 6688
+#       host_address: 192.168.1.102
+#   # back_lidar
+#   - driver:
+#       lidar_type: RSHELIOS_16P
+#       msop_port: 6699
+#       difop_port: 7788
+#       imu_port: 6688
+#       host_address: 192.168.1.103

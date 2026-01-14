@@ -1,0 +1,8 @@
+services:
+  um_srvc:
+    # It forwards signals (SIGTERM/SIGINT) to the app and reaps zombie processes from child workers, preventing dirty
+    # shutdowns and resource leaks.
+    # It is not a supervisor— it won’t restart your app; it only fixes PID-1 semantics.
+    # Recommended for services that spawn subprocesses or use launchers/daemons (e.g., ros2 launch, drivers).
+    init: true
+    command: ["bash", "/tmp/exec_launch_file.sh"]
