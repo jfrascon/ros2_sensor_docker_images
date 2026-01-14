@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+
+# This script is meant to be use to launch each sensor manually inside the container.
+# First, you launch the container, next execute a bash shell inside the container, and finally run this script.
+
+. ${HOME}/workspace/install/setup.bash
+
+export NAMESPACE="/test_manual"
+export ROBOT_NAME="robot"
+export PARAMS_FILE="/tmp/params.yaml"
+export LOG_OPTIONS="log-level=info,disable-stdout-logs=false,disable-rosout-logs=false,disable-external-lib-logs=true"
+export NODE_OPTIONS="name=realsense_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+ros2 launch realsense2_camera eut_sensor.launch.py
+
+/test_manual/robot/realsense_ros2_driver:
+ros__parameters:
+_device_type: ''
+_usb_port_id: ''
+align_depth:
+enable: false
+frames_queue_size: 16
+angular_velocity_cov: 0.01
+base_frame_id: link
+camera_name: camera
+clip_distance: -1.0
+color_info_qos: DEFAULT
+color_qos: SYSTEM_DEFAULT
+colorizer:
+color_scheme: 0
+enable: false
+frames_queue_size: 16
+histogram_equalization_enabled: true
+max_distance: 6.0
+min_distance: 0.0
+stream_filter: 1
+stream_format_filter: 1
+stream_index_filter: -1
+visual_preset: 0
+decimation_filter:
+enable: false
+filter_magnitude: 2
+frames_queue_size: 16
+stream_filter: 1
+stream_format_filter: 1
+stream_index_filter: -1
+depth_info_qos: DEFAULT
+depth_module:
+auto_exposure_limit: 165000
+auto_exposure_limit_toggle: false
+auto_exposure_roi:
+bottom: 479
+left: 0
+right: 847
+top: 0
+auto_gain_limit: 248
+auto_gain_limit_toggle: false
+depth_format: Z16
+depth_profile: 848x480x30
+emitter_always_on: false
+emitter_enabled: 1
+emitter_on_off: false
+enable_auto_exposure: true
+error_polling_enabled: true
+exposure: 8500
+frames_queue_size: 16
+gain: 16
+global_time_enabled: true
+hdr_enabled: false
+infra1_format: Y8
+infra2_format: Y8
+infra_profile: 848x480x30
+inter_cam_sync_mode: 0
+laser_power: 150.0
+output_trigger_enabled: false
+sequence_id: 0
+sequence_name: 0
+sequence_size: 2
+visual_preset: 0
+depth_qos: SYSTEM_DEFAULT
+diagnostics_period: 0.0
+disparity_filter:
+enable: false
+disparity_to_depth:
+enable: false
+enable_color: true
+enable_depth: true
+enable_infra1: true
+enable_infra2: true
+enable_rgbd: false
+enable_sync: false
+filter_by_sequence_id:
+enable: false
+frames_queue_size: 16
+sequence_id: 1
+hdr_merge:
+enable: false
+frames_queue_size: 16
+hold_back_imu_for_frames: false
+hole_filling_filter:
+enable: false
+frames_queue_size: 16
+holes_fill: 1
+stream_filter: 1
+stream_format_filter: 1
+stream_index_filter: -1
+infra1_info_qos: DEFAULT
+infra1_qos: SYSTEM_DEFAULT
+infra2_info_qos: DEFAULT
+infra2_qos: SYSTEM_DEFAULT
+initial_reset: false
+json_file_path: ''
+linear_accel_cov: 0.01
+pointcloud:
+allow_no_texture_points: false
+enable: false
+filter_magnitude: 2
+frames_queue_size: 16
+ordered_pc: false
+pointcloud_qos: DEFAULT
+stream_filter: 0
+stream_format_filter: 0
+stream_index_filter: -1
+publish_tf: true
+qos_overrides:
+/parameter_events:
+publisher:
+depth: 1000
+durability: volatile
+history: keep_last
+reliability: reliable
+realsense_ros2_driver:
+color:
+image_raw:
+enable_pub_plugins:
+- image_transport/raw
+depth:
+image_rect_raw:
+enable_pub_plugins:
+- image_transport/raw
+infra1:
+image_rect_raw:
+enable_pub_plugins:
+- image_transport/raw
+infra2:
+image_rect_raw:
+enable_pub_plugins:
+- image_transport/raw
+reconnect_timeout: 6.0
+rgb_camera:
+auto_exposure_priority: false
+auto_exposure_roi:
+bottom: 479
+left: 0
+right: 639
+top: 0
+backlight_compensation: false
+brightness: 0
+color_format: RGB8
+color_profile: 640x480x30
+contrast: 50
+enable_auto_exposure: true
+enable_auto_white_balance: true
+exposure: 166
+frames_queue_size: 16
+gain: 64
+gamma: 300
+global_time_enabled: true
+hue: 0
+power_line_frequency: 3
+saturation: 64
+sharpness: 50
+white_balance: 4600.0
+rosbag_filename: ''
+rotation_filter:
+enable: false
+frames_queue_size: 16
+rotation: 0.0
+stream_filter: 0
+stream_format_filter: 0
+stream_index_filter: -1
+serial_no: ''
+spatial_filter:
+enable: false
+filter_magnitude: 2
+filter_smooth_alpha: 0.5
+filter_smooth_delta: 20
+frames_queue_size: 16
+holes_fill: 0
+stream_filter: 1
+stream_format_filter: 1
+stream_index_filter: -1
+temporal_filter:
+enable: false
+filter_smooth_alpha: 0.4
+filter_smooth_delta: 20
+frames_queue_size: 16
+holes_fill: 3
+stream_filter: 1
+stream_format_filter: 1
+stream_index_filter: -1
+tf_publish_rate: 0.0
+unite_imu_method: 0
+use_sim_time: false
+wait_for_device_timeout: -1.0
