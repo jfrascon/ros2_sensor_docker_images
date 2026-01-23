@@ -52,7 +52,7 @@ Usage:
   $(basename ${BASH_SOURCE[0]}) <img_id> <um_model> <mode> [--env env_var1 --env env_var2 ... --help]
 
 Positional arguments:
-  img_id        Docker image ID with the Robosense ROS2 driver
+  img_id        Docker image ID with the UMX ROS2 driver
   um_model      UM IMU model: 6 or 7
   mode          How to run the example: automatic or manual
 
