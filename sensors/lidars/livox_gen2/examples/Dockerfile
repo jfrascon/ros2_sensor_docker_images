@@ -6,7 +6,7 @@ FROM ubuntu:${UBUNTU_VERSION}
 # The following labels adhere to the OCI Image Specification for standardized metadata.
 # Reference: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.title="Livox Gen2 LiDAR Docker image" \
-  org.opencontainers.image.description="A Docker image to run the ROS2 driver for Robosense LiDARs" \
+  org.opencontainers.image.description="A Docker image to run the ROS2 driver for Livox Gen2 LiDARs" \
   org.opencontainers.image.authors="anon"
 
 ARG ROS_DISTRO=jazzy
