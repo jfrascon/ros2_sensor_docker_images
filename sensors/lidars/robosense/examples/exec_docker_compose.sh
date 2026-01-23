@@ -69,7 +69,7 @@ EOF
 # "$@"      -> forward all original args verbatim (keeps spaces/quotes)
 # getopt    -> normalizes: reorders options first, splits values, appends a final "--"
 # on error  -> exits non-zero; we show usage and exit 2
-PARSED=$(getopt -o '' -l env:,help -- "$@") || {
+PARSED=$(getopt -o h -l env:,help -- "$@") || {
     usage
     exit 1
 }
@@ -90,7 +90,7 @@ while true; do
         env_vars+=("$2")
         shift 2
         ;;
-    --help)
+    -h|--help)
         usage
         exit 0
         ;;
