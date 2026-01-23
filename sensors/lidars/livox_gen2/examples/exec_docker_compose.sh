@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This script is aimed to launch a Docker container that contains the ROS2 driver for the Robosense LiDARs
+# This script is aimed to launch a Docker container that contains the ROS2 driver for the Livox Gen2 LiDARs
 # If the mode is 'automatic', this script will start the container and automatically launch the driver. You can start
 # another terminal and connect to the container to see the output topics.
 # If the mode is 'manual', this script will start the container, but you will need to connect to the container and run
@@ -51,7 +51,7 @@ Usage:
   $(basename ${BASH_SOURCE[0]}) <img_id> <#example> <mode> [--env env_var1 --env env_var2 ... --help]
 
 Positional arguments:
-  img_id        Docker image ID with the Robosense ROS2 driver
+  img_id        Docker image ID with the Livox Gen2 ROS2 driver
   example       Example number: 1 or 2
   mode          How to run the example: automatic or manual
 
