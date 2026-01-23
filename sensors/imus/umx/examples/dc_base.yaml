@@ -5,6 +5,11 @@ services:
     network_mode: host
     privileged: false
     volumes:
+      - /dev:/dev # to access ttyUSB devices
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - ./um${UM_MODEL}_params.yaml:/tmp/params.yaml # Parameters
       - ./cyclonedds_config_no_peer.xml:/tmp/cyclonedds_config_no_peer.xml
       - ./exec_launch_file.sh:/tmp/exec_launch_file.sh
