@@ -184,4 +184,17 @@ EOF
 fi
 
 print_banner_text "=" "Launching the node 'livox_ros_driver2_node' in a Docker container of the image '${IMG_ID}' using the example file '${YAML_FILE}' in '${mode}' mode"
+
+# This line allows graphical applications inside the container to be displayed on the screen you have connected.
+# If you are in an X11 session, nothing else is required.
+# If you are in a Wayland session, XWayland (the compatibility layer for X11 applications) should already be active.
+# If you want to verify it, run 'pgrep Xwayland' in a terminal.
+# If it is not active in your Wayland session, you will need to enable it.
+# Remember that you must uncomment the line like `/tmp/.X11-unix:/tmp/.X11-unix` in the volumes section of the
+# docker compose base file 'dc_base.yaml' to mount the X11 socket inside the container.
+# Warning: 'xhost +local:' is an effective way to visualize graphical applications on the host, but
+# it allows any local user to access the X server. This might be a security risk on multi-user systems.
+# Therefore, you can run inside the container rviz2 or rqt to visualize the LiDAR data.
+xhost +local:
+
 docker compose "${compose_files[@]}" up -d
