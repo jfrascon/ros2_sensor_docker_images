@@ -1,0 +1,99 @@
+services:
+  umx_imu_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    volumes:
+      - /dev:/dev # to access ttyUSB devices
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./imu_params.yaml:/tmp/params.yaml
+      - ./exec_launch_file_umx.sh:/tmp/exec_launch_file.sh
+    device_cgroup_rules:
+      - "c 188:* rwm" # 188 is ttyUSB devices
+    environment:
+      NAMESPACE: ${NAMESPACE:-} # Optional
+      ROBOT_NAME: ${ROBOT_NAME:-robot} # Required
+      UM_MODEL: 7 # Required: 6 or 7
+      PARAMS_FILE: /tmp/params.yaml # Required
+      # TOPIC_REMAPPINGS is optional.
+      TOPIC_REMAPPINGS: "imu/data:=um7/data,imu/mag:=um7/mag,imu/rpy:=um7/rpy,imu/temperature:=um7/temperature,imu/reset:=um7/reset"
+      # NODE_OPTIONS is optional.
+      # Attention should be paid to the node's name given here, 'umx_ros2_driver'.
+      # If name is not provided the default value used for the node's name is 'umx_ros2_driver'.
+      NODE_OPTIONS: "name=umx_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      # LOGGING_OPTIONS is optional.
+      # Attention should be paid to the loggers:
+      #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
+      #  um7_driver=debug.
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true,test.robot.umx_ros2_driver=debug,um7_driver=debug"
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      RCUTILS_LOGGING_USE_STDOUT: "1"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-11}
+      RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_zenoh_cpp}
+  livox_gen2_lidar_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./livox_config.json:/tmp/config.json
+      - ./livox_params.yaml:/tmp/params.yaml
+      - ./exec_launch_file_livox_gen2.sh:/tmp/exec_launch_file.sh
+    environment:
+      NAMESPACE: ${NAMESPACE:-} # Optional
+      ROBOT_NAME: ${ROBOT_NAME:-robot} # Required
+      CONFIG_FILE: /tmp/config.json # Required
+      PARAMS_FILE: /tmp/params.yaml # Required
+      # TOPIC_REMAPPINGS is optional.
+      TOPIC_REMAPPINGS: "livox/lidar_192_168_1_193:=front_lidar/scan/points,livox/imu_192_168_1_193:=front_lidar/imu/data"
+      # NODE_OPTIONS is optional.
+      # Attention should be paid to the node's name given here, 'livox_gen2_lidar_ros2_driver'.
+      # If name is not provided the default value used for the node's name is 'livox_gen2_lidar_ros2_driver'.
+      NODE_OPTIONS: "name=livox_gen2_lidar_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      # LOGGING_OPTIONS is optional.
+      # Attention should be paid to the loggers:
+      #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=false,disable-rosout-logs=false,disable-external-lib-logs=true"
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      RCUTILS_LOGGING_USE_STDOUT: "1"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-11}
+      RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_zenoh_cpp}
+  robosense_lidar_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./robosense_config.yaml:/tmp/config.yaml
+      - ./exec_launch_file_robosense.sh:/tmp/exec_launch_file.sh
+    environment:
+      NAMESPACE: ${NAMESPACE:-} # Optional
+      ROBOT_NAME: ${ROBOT_NAME:-robot} # Required
+      CONFIG_FILE: /tmp/config.yaml # Required
+      # NODE_OPTIONS is optional.
+      # Attention should be paid to the node's name given here, 'robosense_lidar_ros2_driver'.
+      # If name is not provided, the default value used for the node's name is 'robosense_lidar_ros2_driver'.
+      NODE_OPTIONS: "name=robosense_lidar_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      # LOGGING_OPTIONS is optional.
+      # Attention should be paid to the loggers:
+      #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      RCUTILS_LOGGING_USE_STDOUT: "1"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-11}
+      RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_zenoh_cpp}

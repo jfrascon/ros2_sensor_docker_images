@@ -24,21 +24,17 @@ WORKDIR /root
 SHELL ["/bin/bash", "-c"]
 
 # Avoid installing recommended and suggested packages.
-RUN tee /etc/apt/apt.conf.d/99norecommends.conf >/dev/null <<'EOF_INNER'
+RUN tee /etc/apt/apt.conf.d/99norecommends.conf >/dev/null <<'EOF'
 APT::Install-Recommends "false";
 APT::Install-Suggests "false";
-EOF_INNER
+EOF
 
 # Minimal tooling to allow cloning the sensors repository.
-RUN <<'EOF_INNER'
+RUN --mount=type=bind,source=.,target=/tmp/context <<'EOF'
 set -euo pipefail
 apt-get update
 apt-get install --yes --no-install-recommends ca-certificates git
 rm -rf /var/lib/apt/lists/*
-EOF_INNER
-
-RUN <<'EOF_INNER'
-set -euo pipefail
 
 log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
 
@@ -46,12 +42,6 @@ repo_url="https://github.com/jfrascon/ros2_sensor_docker_images"
 log "Cloning sensors repository '${repo_url}' into /tmp/sensor_images"
 rm -rf /tmp/sensor_images
 git clone "${repo_url}" /tmp/sensor_images
-EOF_INNER
-
-RUN --mount=type=bind,source=.,target=/tmp/context <<'EOF_INNER'
-set -euo pipefail
-
-log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
 
 # Checks.
 [ -z "${ROS_DISTRO}" ] && {
@@ -98,16 +88,6 @@ base_dir="/tmp/sensor_images/base_docker_files"
 
 [ ! -s "${base_dir}/entrypoint.sh" ] && {
   log "Error: Missing 'entrypoint.sh' in ${base_dir}" >&2
-  exit 1
-}
-
-[ ! -s /tmp/context/install.sh ] && {
-  log "Error: Missing 'install.sh' in the build context" >&2
-  exit 1
-}
-
-[ ! -s /tmp/context/compile.sh ] && {
-  log "Error: Missing 'compile.sh' in the build context" >&2
   exit 1
 }
 
@@ -175,13 +155,35 @@ log "Added line '${line}' to file '${rosdep_ignored_keys_index_file}'"
 # Sensor installation
 # --------------------------------------------------------------------------------------
 
-log "Executing example 'install.sh' for multi-sensor image"
+log "Executing install scripts for multi-sensor image"
 
 # Path to the directory where the repositories will be cloned.
 pkgs_dir="${IMAGE_MAIN_USER_WORKSPACE}/src"
 mkdir --verbose --parent "${pkgs_dir}"
 
-bash /tmp/context/install.sh "${pkgs_dir}"
+repo_dir="/tmp/sensor_images"
+umx_dir="${repo_dir}/sensors/imus/umx"
+livox_gen2_dir="${repo_dir}/sensors/lidars/livox_gen2"
+robosense_dir="${repo_dir}/sensors/lidars/robosense"
+
+sensors=(
+  "UMX IMU:${umx_dir}"
+  "Livox Gen2 LiDAR:${livox_gen2_dir}"
+  "Robosense LiDAR:${robosense_dir}"
+)
+
+for sensor in "${sensors[@]}"; do
+  sensor_name="${sensor%%:*}"
+  sensor_dir="${sensor#*:}"
+
+  [ ! -s "${sensor_dir}/install.sh" ] && {
+    log "Error: Missing 'install.sh' in ${sensor_dir}" >&2
+    exit 1
+  }
+
+  log "Installing ${sensor_name} driver"
+  bash "${sensor_dir}/install.sh" "${pkgs_dir}"
+done
 
 # -------------------------------------------- End of sensor installation ----------------------------------------------
 
@@ -208,29 +210,51 @@ apt-get autoclean
 apt-get autoremove --purge -y
 apt-get clean
 rm -rf /var/lib/apt/lists/*  &>/dev/null
-EOF_INNER
+EOF
 
 USER "${IMAGE_MAIN_USER}"
 WORKDIR "/home/${IMAGE_MAIN_USER}"
 
-RUN --mount=type=bind,source=.,target=/tmp/context <<'EOF_INNER'
+RUN --mount=type=bind,source=.,target=/tmp/context <<'EOF'
 
 log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
 
-source /opt/ros/${ROS_DISTRO}/setup.bash
+source /opt/ros/${ROS_DISTRO}/setup.bash || {
+  log "Error: Failed to source ROS setup for '${ROS_DISTRO}'" >&2
+  exit 1
+}
 
 pkgs_dir="${IMAGE_MAIN_USER_WORKSPACE}/src"
 
-log "Executing example 'compile.sh' for multi-sensor image"
+log "Compiling packages for multi-sensor image"
 
-# If the flag --symlink-install is used, the source code folders cannot be removed after compilation. However,
-# if the flag is omitted, the source code folders can be removed after compilation to save space.
-# In this example Dockerfile, we use the flag --symlink-install.
-bash /tmp/context/compile.sh --symlink-install "${pkgs_dir}" || {
-    log "Error: Failed to run 'compile.sh'" 1>&2
+repo_dir="/tmp/sensor_images"
+umx_dir="${repo_dir}/sensors/imus/umx"
+livox_gen2_dir="${repo_dir}/sensors/lidars/livox_gen2"
+robosense_dir="${repo_dir}/sensors/lidars/robosense"
+
+compile_sensors=(
+  "UMX IMU:${umx_dir}"
+  "Livox Gen2 LiDAR:${livox_gen2_dir}"
+  "Robosense LiDAR:${robosense_dir}"
+)
+
+for sensor in "${compile_sensors[@]}"; do
+  sensor_name="${sensor%%:*}"
+  sensor_dir="${sensor#*:}"
+
+  [ ! -s "${sensor_dir}/compile.sh" ] && {
+    log "Error: Missing 'compile.sh' in ${sensor_dir}" >&2
     exit 1
-}
-EOF_INNER
+  }
+
+  log "Compiling ${sensor_name} packages"
+  bash "${sensor_dir}/compile.sh" --symlink-install "${pkgs_dir}" || {
+    log "Error: Failed to compile ${sensor_name}" >&2
+    exit 1
+  }
+done
+EOF
 
 # Configure timezone and localization settings.
 # - TZ: Set the timezone to UTC to ensure consistent time handling across environments.

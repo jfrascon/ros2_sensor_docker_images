@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     parser.add_argument('ros_distro', type=str, help=(f'Supported ROS distros: {", ".join(ros_distros.keys())}'))
 
-    default_img_id = 'um_livox_gen2_lidar_robosense_lidar:<ros_distro>'
+    default_img_id = 'multi_sensor:<ros_distro>'
     parser.add_argument('--img-id', type=str, default='', help=f'Built Docker image ID. Default: {default_img_id}')
 
     parser.add_argument(
