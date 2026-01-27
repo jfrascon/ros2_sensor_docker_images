@@ -90,6 +90,11 @@ log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
   exit 1
 }
 
+[ ! -s /tmp/context/eut_sensor.launch.py ] && {
+  log "Error: Missing 'eut_sensor.launch.py' in the build context" >&2
+  exit 1
+}
+
 # --------------------------------------------------------------------------------------
 # BASE SYSTEM installation
 # --------------------------------------------------------------------------------------
