@@ -49,7 +49,7 @@ print_banner_text() {
 usage() {
     cat <<EOF
 Usage:
-  $(basename ${BASH_SOURCE[0]}) <img_id> <um_model> <mode> [--env env_var1 --env env_var2 ... --help]
+  $(basename ${BASH_SOURCE[0]}) <img_id> <um_model> <mode> [options]
 
 Positional arguments:
   img_id        Docker image ID with the UMX ROS2 driver
@@ -57,7 +57,11 @@ Positional arguments:
   mode          How to run the example: automatic or manual
 
 Options:
-  --env env_var   Environment variable to pass to the container
+  --namespace VALUE         Namespace prefix (default: empty)
+  --robot-name VALUE        Robot name (default: robot)
+  --ros-domain-id VALUE     ROS domain ID (default: 11)
+  --rmw-implementation VAL  RMW implementation (default: rmw_zenoh_cpp)
+  --env env_var             Additional environment variable in KEY=VALUE format (repeatable)
   --help          Show this help and exit
 EOF
     exit 1
@@ -70,7 +74,7 @@ EOF
 # "$@"      -> forward all original args verbatim (keeps spaces/quotes)
 # getopt    -> normalizes: reorders options first, splits values, appends a final "--"
 # on error  -> exits non-zero; we show usage and exit 2
-PARSED=$(getopt -o h -l env:,help -- "$@") || {
+PARSED=$(getopt -o h -l env:,help,namespace:,robot-name:,ros-domain-id:,rmw-implementation: -- "$@") || {
     usage
     exit 1
 }
@@ -79,16 +83,36 @@ PARSED=$(getopt -o h -l env:,help -- "$@") || {
 eval set -- "${PARSED}"
 
 # After eval set -- ... we get:
-# --env env_var_1 --env env_var_2 ... -- img_id example mode
-# --env may or may not be present
+# --namespace VALUE --robot-name VALUE --ros-domain-id VALUE --rmw-implementation VALUE --env env_var_1 --env env_var_2 ... -- img_id um_model mode
+# --env may or may not be present; options may appear in any order
 # -- is the end of options marker
 
-env_vars=() # optional
+namespace=""
+robot_name="robot"
+ros_domain_id="11"
+rmw_implementation="rmw_zenoh_cpp"
+env_vars=() # optional extra env vars
 
 while true; do
     case "${1:-}" in
     --env)
         env_vars+=("$2")
+        shift 2
+        ;;
+    --namespace)
+        namespace="$2"
+        shift 2
+        ;;
+    --robot-name)
+        robot_name="$2"
+        shift 2
+        ;;
+    --ros-domain-id)
+        ros_domain_id="$2"
+        shift 2
+        ;;
+    --rmw-implementation)
+        rmw_implementation="$2"
         shift 2
         ;;
     -h|--help)
@@ -125,6 +149,10 @@ fi
 
 # Some environment variables must be exported because the used Docker compose files relies on them.
 export IMG_ID
+export NAMESPACE="${namespace}"
+export ROBOT_NAME="${robot_name}"
+export ROS_DOMAIN_ID="${ros_domain_id}"
+export RMW_IMPLEMENTATION="${rmw_implementation}"
 
 [ "${UM_MODEL}" != "6" ] && [ "${UM_MODEL}" != "7" ] && {
     echo "Supported UM IMU models 6 and 7 only"
@@ -143,41 +171,43 @@ else
     usage
 fi
 
-# Create a temporary Docker compose file to pass the environment variables provided by the user to the container.
-if [ "${#env_vars[@]}" -gt 0 ]; then
-    env_vars_file="$(mktemp)"
-    cat <<'EOF' >"${env_vars_file}"
-services:
-  um_srvc:
-    environment:
-EOF
-    # Build a minimal override with only validated KEY=VALUE entries.
-    for env_kv in "${env_vars[@]}"; do
-        # If env_kv does not contain '=', or has empty key or value, skip it.
+# Create a temporary Docker compose file to pass extra environment variables to the service.
+env_lines=()
 
-        # Reject entries without '=' to enforce KEY=VALUE format.
-        if [[ ${env_kv} != *"="* ]]; then
-            echo "Warning: ignoring env var '${env_kv}' (expected KEY=VALUE)" >&2
-            continue
-        fi
+escape_env_val() {
+    local val="$1"
+    val=${val//\'/\'\'}
+    printf "%s" "${val}"
+}
 
-        env_key="${env_kv%%=*}"
-        env_val="${env_kv#*=}"
+for env_kv in "${env_vars[@]}"; do
+    # Reject entries without '=' to enforce KEY=VALUE format.
+    if [[ ${env_kv} != *"="* ]]; then
+        echo "Warning: ignoring env var '${env_kv}' (expected KEY=VALUE)" >&2
+        continue
+    fi
 
-        # Skip empty keys or values to avoid invalid env entries.
-        if [ -z "${env_key}" ] || [ -z "${env_val}" ]; then
-            echo "Warning: ignoring env var '${env_kv}' (empty key or value)" >&2
-            continue
-        fi
+    env_key="${env_kv%%=*}"
+    env_val="${env_kv#*=}"
 
-        # Escape single quotes for YAML single-quoted scalars.
-        # env_val="abc"       -> abc (no changes) -> YAML: 'abc'
-        # env_val="O'Reilly"  -> O''Reilly        -> YAML: 'O''Reilly'
-        # env_val="it's fine" -> it''s fine       -> YAML: 'it''s fine'
-        env_val=${env_val//\'/\'\'}
-        printf "      %s: '%s'\n" "${env_key}" "${env_val}" >>"${env_vars_file}"
+    # Skip empty keys or values to avoid invalid env entries.
+    if [ -z "${env_key}" ] || [ -z "${env_val}" ]; then
+        echo "Warning: ignoring env var '${env_kv}' (empty key or value)" >&2
+        continue
+    fi
+
+    env_val="$(escape_env_val "${env_val}")"
+    env_lines+=("      ${env_key}: '${env_val}'")
+done
+
+if [ "${#env_lines[@]}" -gt 0 ]; then
+    env_vars_file="$(mktemp -p /tmp dc_extra_env_XXXXXX.yaml)"
+    printf "services:\n  um_srvc:\n    environment:\n" >"${env_vars_file}"
+    for line in "${env_lines[@]}"; do
+        printf "%s\n" "${line}" >>"${env_vars_file}"
     done
-    # Include the generated override so Compose merges it into the service.
+    echo "Generated extra env file: ${env_vars_file}"
+    # Include the generated extra-env file so Compose merges it into the service.
     compose_files+=("-f" "${env_vars_file}")
 fi
 

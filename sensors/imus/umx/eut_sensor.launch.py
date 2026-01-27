@@ -44,7 +44,7 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
 
     # If the node's name is not set, set a default one.
     if not str(node_options['name']).strip():
-        node_options['name'] = 'um_ros2_driver'
+        node_options['name'] = 'umx_ros2_driver'
 
     logging_options = rlh.process_logging_options(LaunchConfiguration('logging_options').perform(ctx))
 

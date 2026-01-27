@@ -87,9 +87,9 @@ rm -rf "${local_um7_repo}/.git"
 
 # We want to use the launch file 'eut_sensor.launch.py' to launch the node, as we do with other sensors.
 # To overcome that situation we have a strategy where:
-# We keep 2 files:
-# cmakelists_original="${script_dir}/CMakeLists_original.txt"
-# cmakelists_modified="${script_dir}/CMakeLists_modified.txt"
+# We keep 2 files under extras/:
+# cmakelists_original="${script_dir}/extras/CMakeLists_original.txt"
+# cmakelists_modified="${script_dir}/extras/CMakeLists_modified.txt"
 # cmakelists_downloaded="${local_um7_repo}/CMakeLists.txt"
 #
 # Goal:
@@ -101,8 +101,9 @@ rm -rf "${local_um7_repo}/.git"
 # and require a manual review of the changes and possible regeneration of the modified version.
 
 cmakelists_downloaded="${local_um7_repo}/CMakeLists.txt"
-cmakelists_original="${script_dir}/CMakeLists_original.txt"
-cmakelists_modified="${script_dir}/CMakeLists_modified.txt"
+cmakelists_dir="${script_dir}/extras"
+cmakelists_original="${cmakelists_dir}/CMakeLists_original.txt"
+cmakelists_modified="${cmakelists_dir}/CMakeLists_modified.txt"
 
 [ ! -s "${cmakelists_original}" ] && {
     log "Error: Missing file '${cmakelists_original}'" >&2

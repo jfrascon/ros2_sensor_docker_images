@@ -90,6 +90,26 @@ log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
   exit 1
 }
 
+[ ! -d /tmp/context/extras ] && {
+  log "Error: Missing 'extras' directory in the build context" >&2
+  exit 1
+}
+
+[ ! -s /tmp/context/extras/CMakeLists_original.txt ] && {
+  log "Error: Missing 'extras/CMakeLists_original.txt' in the build context" >&2
+  exit 1
+}
+
+[ ! -s /tmp/context/extras/CMakeLists_modified.txt ] && {
+  log "Error: Missing 'extras/CMakeLists_modified.txt' in the build context" >&2
+  exit 1
+}
+
+[ ! -s /tmp/context/eut_sensor.launch.py ] && {
+  log "Error: Missing 'eut_sensor.launch.py' in the build context" >&2
+  exit 1
+}
+
 # --------------------------------------------------------------------------------------
 # BASE SYSTEM installation
 # --------------------------------------------------------------------------------------

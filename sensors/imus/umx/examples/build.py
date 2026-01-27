@@ -172,12 +172,7 @@ if __name__ == '__main__':
                 print(f'Error copying {file} to {tmp_context_dir}: {e}')
 
     shutil.copy2(umx_dir.joinpath('install.sh'), tmp_context_dir.joinpath('install.sh'))
-    shutil.copy2(
-        umx_dir.joinpath('extras', 'CMakeLists_original.txt'), tmp_context_dir.joinpath('CMakeLists_original.txt')
-    )
-    shutil.copy2(
-        umx_dir.joinpath('extras', 'CMakeLists_modified.txt'), tmp_context_dir.joinpath('CMakeLists_modified.txt')
-    )
+    shutil.copytree(umx_dir.joinpath('extras'), tmp_context_dir.joinpath('extras'))
     shutil.copy2(umx_dir.joinpath('compile.sh'), tmp_context_dir.joinpath('compile.sh'))
     shutil.copy2(umx_dir.joinpath('eut_sensor.launch.py'), tmp_context_dir.joinpath('eut_sensor.launch.py'))
 
