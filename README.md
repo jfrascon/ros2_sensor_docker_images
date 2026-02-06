@@ -40,12 +40,15 @@ services:
     network_mode: host
     privileged: false
     volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - ./${CONFIG_FILE}:/tmp/config.yaml
-      - ./cyclonedds_config_no_peer.xml:/tmp/cyclonedds_config_no_peer.xml
       - ./exec_launch_file.sh:/tmp/exec_launch_file.sh
     environment:
-      NAMESPACE: /test # Optional, default is ''
-      ROBOT_NAME: robot # Required
+      NAMESPACE: ${NAMESPACE:-} # Optional
+      ROBOT_NAME: ${ROBOT_NAME:-robot} # Required
       CONFIG_FILE: /tmp/config.yaml # Optional, default is ''
       # No remappings needed, topics are defined in the config_file.
       # NODE_OPTIONS is optional.
@@ -56,9 +59,12 @@ services:
       # Attention should be paid to the loggers:
       #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
       LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
-      ROS_DOMAIN_ID: 11
-      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
-      CYCLONEDDS_URI: file:///tmp/cyclonedds_config_no_peer.xml
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      RCUTILS_LOGGING_USE_STDOUT: "1"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-11}
+      RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_zenoh_cpp}
 ```
 
 ## Repository anatomy
