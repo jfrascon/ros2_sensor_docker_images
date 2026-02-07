@@ -121,8 +121,6 @@ SUDO_CMD=()
 if [ "$(id -u)" -ne 0 ]; then
     require_cmd sudo
     SUDO_CMD=(sudo)
-else
-    SUDO_CMD=()
 fi
 
 # Refresh apt package index
