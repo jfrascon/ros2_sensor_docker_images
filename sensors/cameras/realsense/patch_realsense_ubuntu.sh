@@ -154,6 +154,8 @@ APT_PACKAGES=(
     libusb-1.0-0-dev
     libudev-dev
     pkg-config
+    udev
+    v4l-utils
 )
 
 # Check if the script is in clone mode or source-dir mode based on the presence of --source-dir.
