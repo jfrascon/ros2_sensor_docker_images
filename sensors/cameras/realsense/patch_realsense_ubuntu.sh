@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# This script patches kernel modules for RealSense on Ubuntu LTS (20.04, 22.04, 24.04, other in future) in a regular
+# machine or in a Jetson L4T device.
+# It must be run on the HOST machine, not inside a container.
+# It supports clone mode (default), which fetches librealsense from GitHub, and source-dir mode, which uses an existing
+# local librealsense tree.
+
 usage() {
     cat <<EOF
 Usage:
