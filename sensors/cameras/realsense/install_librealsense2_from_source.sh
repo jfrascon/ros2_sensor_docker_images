@@ -3,9 +3,9 @@
 set -euo pipefail
 
 usage() {
-    cat <<'EOF'
+    cat <<EOF
 Usage:
-  install_librealsense2_from_source.sh [--source-dir <dir>] [--remote-ref <ref>] [--clone-dir <dir>] [--option <NAME>=<VALUE> ...]
+  $(basename "${BASH_SOURCE[0]}") [--source-dir <dir>] [--remote-ref <ref>] [--clone-dir <dir>] [--option <NAME>=<VALUE> ...]
 
 Description:
   Build and install librealsense2 from source using one of two modes:
