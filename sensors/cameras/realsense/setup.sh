@@ -7,7 +7,7 @@ Usage:
   $(basename "${BASH_SOURCE[0]}") <pkgs_dir> <refs_file> <ignored_keys_file> [--help | -h]
 
 Description:
-  Clone required repositories
+  Clone required repositories, install the custom launch file, and update rosdep ignored keys.
 
 Options:
   -h, --help  Show this help message.
@@ -21,6 +21,9 @@ Arguments:
 
 Notes:
   - refs_file must define both keys: realsense-ros and ros2_launch_helpers.
+  - Example refs_file content:
+      realsense-ros 4.57.3
+      ros2_launch_helpers main
   - Destination paths are fixed:
       <pkgs_dir>/realsense-ros
       <pkgs_dir>/ros2_launch_helpers
