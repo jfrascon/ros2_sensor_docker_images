@@ -4,21 +4,27 @@ set -euo pipefail
 usage() {
     cat <<EOF
 Usage:
-  $(basename "${BASH_SOURCE[0]}") [--remote-ref <ref>] <clone_dir> <ignored_keys_file> [--help | -h]
+  $(basename "${BASH_SOURCE[0]}") <pkgs_dir> <refs_file> <ignored_keys_file> [--help | -h]
 
 Description:
-  Clone the RealSense ROS2 driver and install the custom launch file.
+  Clone required repositories
 
 Options:
-  --remote-ref <ref>  Branch or tag to clone (example: ros2-master or 4.57.6).
   -h, --help  Show this help message.
 
 Arguments:
-  clone_dir          Destination directory for the cloned repository.
+  pkgs_dir           Parent directory where repositories will be cloned.
+  refs_file          File containing required repository refs:
+                     realsense-ros <ref>
+                     ros2_launch_helpers <ref>
   ignored_keys_file  Existing file where rosdep ignored keys are appended.
 
 Notes:
-  - If --remote-ref is not provided, the latest published tag is used (GitHub releases/latest).
+  - refs_file must define both keys: realsense-ros and ros2_launch_helpers.
+  - Destination paths are fixed:
+      <pkgs_dir>/realsense-ros
+      <pkgs_dir>/ros2_launch_helpers
+  - If any destination already exists, the script fails.
 EOF
 }
 
@@ -33,14 +39,14 @@ require_cmd() {
 }
 
 cleanup_clone_dir_on_error() {
-    if [ -n "${local_repo:-}" ] && [ -d "${local_repo}" ]; then
-        log "ERROR: git clone failed, removing destination directory: ${local_repo}" >&2
-        rm -rf "${local_repo}"
+    if [ -n "${CURRENT_CLONE_DIR:-}" ] && [ -d "${CURRENT_CLONE_DIR}" ]; then
+        log "ERROR: git clone failed, removing destination directory: ${CURRENT_CLONE_DIR}" >&2
+        rm -rf "${CURRENT_CLONE_DIR}"
     fi
 }
 
 SHORT_OPTS="h"
-LONG_OPTS="help,remote-ref:"
+LONG_OPTS="help"
 PARSED_ARGS="$(getopt --options "${SHORT_OPTS}" --longoptions "${LONG_OPTS}" --name "$0" -- "$@")" || {
     usage
     exit 2
@@ -48,13 +54,8 @@ PARSED_ARGS="$(getopt --options "${SHORT_OPTS}" --longoptions "${LONG_OPTS}" --n
 
 eval set -- "${PARSED_ARGS}"
 
-REMOTE_REF=""
 while true; do
     case "${1}" in
-    --remote-ref)
-        REMOTE_REF="${2}"
-        shift 2
-        ;;
     -h | --help)
         usage
         exit 0
@@ -71,19 +72,26 @@ while true; do
     esac
 done
 
-if [ "$#" -ne 2 ]; then
-    log "ERROR: Expected 2 positional arguments: <clone_dir> <ignored_keys_file>. Got: $*" >&2
+if [ "$#" -ne 3 ]; then
+    log "ERROR: Expected 3 positional arguments: <pkgs_dir> <refs_file> <ignored_keys_file>. Got: $*" >&2
     usage
     exit 2
 fi
 
-CLONE_DIR="${1}"
-ROSDEP_IGNORED_KEYS_FILE="${2}"
+PKGS_DIR="${1}"
+REFS_FILE="${2}"
+ROSDEP_IGNORED_KEYS_FILE="${3}"
 
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -e "${PKGS_DIR}" ] && [ ! -d "${PKGS_DIR}" ]; then
+    log "ERROR: pkgs_dir exists but is not a directory: ${PKGS_DIR}" >&2
+    exit 1
+fi
 
-if [ -d "${CLONE_DIR}" ]; then
-    log "ERROR: Destination directory already exists: ${CLONE_DIR}. Please remove it or choose a new destination" >&2
+mkdir --parent --verbose "${PKGS_DIR}"
+PKGS_DIR="$(cd "${PKGS_DIR}" && pwd)"
+
+if [ ! -f "${REFS_FILE}" ]; then
+    log "ERROR: refs_file does not exist: ${REFS_FILE}" >&2
     exit 1
 fi
 
@@ -92,56 +100,135 @@ if [ ! -f "${ROSDEP_IGNORED_KEYS_FILE}" ]; then
     exit 1
 fi
 
-parent_dir="$(dirname "${CLONE_DIR}")"
-mkdir --parent --verbose "${parent_dir}"
-cd "${parent_dir}" # Set current directory
+require_cmd git
+require_cmd grep
 
-remote_repo="https://github.com/realsenseai/realsense-ros.git"
-local_repo="${CLONE_DIR}"
+realsense_repo_url="https://github.com/realsenseai/realsense-ros.git"
+ros2_launch_helpers_repo_url="https://github.com/jfrascon/ros2_launch_helpers.git"
 
-# Determine which git ref to clone: use --remote-ref when provided, otherwise use the latest release tag.
-if [ -n "${REMOTE_REF}" ]; then
-    EFFECTIVE_REF="${REMOTE_REF}"
-    REF_KIND="remote reference"
-else
-    require_cmd curl
+REALSENSE_ROS_REF=""
+ROS2_LAUNCH_HELPERS_REF=""
+line_number=0
 
-    if ! latest_release_json="$(curl -fsSL https://api.github.com/repos/realsenseai/realsense-ros/releases/latest)"; then
-        log "ERROR: Failed to query GitHub API for the latest realsense-ros release" >&2
-        exit 1
+# Read refs_file line by line.
+# - IFS= keeps leading/trailing spaces in each raw line so we can handle comments/blank lines explicitly.
+# - read -r avoids backslash escaping.
+# - "|| [ -n \"\${line}\" ]" ensures the last line is processed even if the file does not end with a newline.
+while IFS= read -r line || [ -n "${line}" ]; do
+    line_number=$((line_number + 1))
+    # Example: if line is "    realsense-ros    4.57.6", trimmed_line becomes "realsense-ros    4.57.6".
+    trimmed_line="${line#"${line%%[![:space:]]*}"}"
+
+    # Skip blank lines and comment lines (a comment is any line whose first non-space character is '#').
+    if [ -z "${trimmed_line}" ] || [[ "${trimmed_line}" == \#* ]]; then
+        continue
     fi
 
-    EFFECTIVE_REF="$(printf '%s\n' "${latest_release_json}" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+    repo_key=""
+    repo_ref=""
+    # Any extra fields in the line are ignored on purpose.
+    read -r repo_key repo_ref _ <<<"${trimmed_line}"
 
-    if [ -z "${EFFECTIVE_REF}" ]; then
-        log "ERROR: Could not resolve latest release tag from GitHub API" >&2
-        exit 1
+    if [ -z "${repo_key}" ] || [ -z "${repo_ref}" ]; then
+        log "ERROR: Invalid refs_file format at line ${line_number}. Expected: <repo_key> <ref>" >&2
+        exit 2
     fi
 
-    REF_KIND="latest release"
+    case "${repo_key}" in
+    realsense-ros)
+        if [ -n "${REALSENSE_ROS_REF}" ]; then
+            log "ERROR: Duplicate key in refs_file at line ${line_number}: realsense-ros" >&2
+            exit 2
+        fi
+
+        REALSENSE_ROS_REF="${repo_ref}"
+        ;;
+    ros2_launch_helpers)
+        if [ -n "${ROS2_LAUNCH_HELPERS_REF}" ]; then
+            log "ERROR: Duplicate key in refs_file at line ${line_number}: ros2_launch_helpers" >&2
+            exit 2
+        fi
+
+        ROS2_LAUNCH_HELPERS_REF="${repo_ref}"
+        ;;
+    *)
+        log "ERROR: Unknown key in refs_file at line ${line_number}: ${repo_key}" >&2
+        exit 2
+        ;;
+    esac
+done <"${REFS_FILE}"
+
+if [ -z "${REALSENSE_ROS_REF}" ]; then
+    log "ERROR: Missing required key in refs_file: realsense-ros" >&2
+    exit 2
 fi
 
-require_cmd git
+if [ -z "${ROS2_LAUNCH_HELPERS_REF}" ]; then
+    log "ERROR: Missing required key in refs_file: ros2_launch_helpers" >&2
+    exit 2
+fi
 
-log "Cloning '${remote_repo}' using ${REF_KIND} '${EFFECTIVE_REF}'"
-log "Using destination directory '${local_repo}'"
+realsense_ros_dst="${PKGS_DIR}/realsense-ros"
+ros2_launch_helpers_dst="${PKGS_DIR}/ros2_launch_helpers"
 
-# Enable a temporary ERR trap so a failed clone does not leave a partial destination directory.
-# The trap is cleared immediately after a successful clone.
+if [ -e "${realsense_ros_dst}" ]; then
+    log "ERROR: Destination directory already exists: ${realsense_ros_dst}" >&2
+    exit 1
+fi
+
+if [ -e "${ros2_launch_helpers_dst}" ]; then
+    log "ERROR: Destination directory already exists: ${ros2_launch_helpers_dst}" >&2
+    exit 1
+fi
+
+# Validate that each provided ref exists in remote as a branch or tag.
+if ! git ls-remote --exit-code --heads --tags "${realsense_repo_url}" "${REALSENSE_ROS_REF}" >/dev/null 2>&1; then
+    log "ERROR: Remote ref '${REALSENSE_ROS_REF}' not found in ${realsense_repo_url}" >&2
+    exit 1
+fi
+
+if ! git ls-remote --exit-code --heads --tags "${ros2_launch_helpers_repo_url}" "${ROS2_LAUNCH_HELPERS_REF}" >/dev/null 2>&1; then
+    log "ERROR: Remote ref '${ROS2_LAUNCH_HELPERS_REF}' not found in ${ros2_launch_helpers_repo_url}" >&2
+    exit 1
+fi
+
+log "Cloning '${realsense_repo_url}' using remote reference '${REALSENSE_ROS_REF}'"
+log "Using destination directory '${realsense_ros_dst}'"
+# Set cleanup target for ERR trap so a failed clone removes only this destination directory.
+CURRENT_CLONE_DIR="${realsense_ros_dst}"
 trap 'cleanup_clone_dir_on_error' ERR
-# --depth 1: Clone only the latest commit to save time and bandwidth, as we don't need the full history for this use
-# case.
-git clone --branch "${EFFECTIVE_REF}" --depth 1 "${remote_repo}" "${local_repo}"
+git clone --branch "${REALSENSE_ROS_REF}" --depth 1 "${realsense_repo_url}" "${realsense_ros_dst}"
 trap - ERR
+# Clear cleanup target after a successful clone to avoid deleting unrelated paths on later errors.
+CURRENT_CLONE_DIR=""
 
 # Free space for Docker image builds; VCS history is not required.
-rm -rf "${local_repo}/.git"
+rm -rf "${realsense_ros_dst}/.git"
+
+log "Cloning '${ros2_launch_helpers_repo_url}' using remote reference '${ROS2_LAUNCH_HELPERS_REF}'"
+log "Using destination directory '${ros2_launch_helpers_dst}'"
+# Set cleanup target for ERR trap so a failed clone removes only this destination directory.
+CURRENT_CLONE_DIR="${ros2_launch_helpers_dst}"
+trap 'cleanup_clone_dir_on_error' ERR
+git clone --branch "${ROS2_LAUNCH_HELPERS_REF}" --depth 1 "${ros2_launch_helpers_repo_url}" "${ros2_launch_helpers_dst}"
+trap - ERR
+# Clear cleanup target after a successful clone to avoid deleting unrelated paths on later errors.
+CURRENT_CLONE_DIR=""
+
+# Free space.
+rm -rf "${ros2_launch_helpers_dst}/.git"
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Installing launch file eut_sensor.launch.py
 # ----------------------------------------------------------------------------------------------------------------------
-log "Placing eut_sensor.launch.py into ${local_repo}/realsense2_camera/launch/eut_sensor.launch.py"
-install -m 0755 "${script_dir}/eut_sensor.launch.py" "${local_repo}/realsense2_camera/launch/eut_sensor.launch.py"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "${script_dir}/eut_sensor.launch.py" ]; then
+    log "ERROR: Missing required launch file: ${script_dir}/eut_sensor.launch.py" >&2
+    exit 1
+fi
+
+log "Placing eut_sensor.launch.py into ${realsense_ros_dst}/realsense2_camera/launch/eut_sensor.launch.py"
+install -m 0755 "${script_dir}/eut_sensor.launch.py" "${realsense_ros_dst}/realsense2_camera/launch/eut_sensor.launch.py"
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Write rosdep keys to ignore during 'rosdep install'.
