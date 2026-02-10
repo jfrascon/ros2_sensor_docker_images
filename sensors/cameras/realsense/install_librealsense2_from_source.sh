@@ -240,30 +240,31 @@ if [ "${MODE}" = "clone" ]; then
     default_dst_dir="/tmp/librealsense"
 
     if [ -n "${CLONE_DIR}" ]; then
-        DST_DIR="${CLONE_DIR}"
+        CLONE_DIR_EFFECTIVE="${CLONE_DIR}"
     else
-        DST_DIR="${default_dst_dir}"
+        CLONE_DIR_EFFECTIVE="${default_dst_dir}"
     fi
 
-    if [ -d "${DST_DIR}" ]; then
-        log "ERROR: Clone directory already exists: ${DST_DIR}"
+    if [ -d "${CLONE_DIR_EFFECTIVE}" ]; then
+        log "ERROR: Clone directory already exists: ${CLONE_DIR_EFFECTIVE}"
         exit 1
     fi
 
-    log "Using destination directory: ${DST_DIR}"
+    log "Using destination directory: ${CLONE_DIR_EFFECTIVE}"
 
     # Determine which git ref to clone: use --remote-ref when provided, otherwise use the latest release tag.
     if [ -n "${REMOTE_REF}" ]; then
-        REF="${REMOTE_REF}"
+        EFFECTIVE_REF="${REMOTE_REF}"
         REF_KIND="remote ref"
     else
         if ! latest_release_json="$(curl -fsSL https://api.github.com/repos/realsenseai/librealsense/releases/latest)"; then
             log "ERROR: Failed to query GitHub API for the latest librealsense release."
             exit 1
         fi
-        REF="$(printf '%s\n' "${latest_release_json}" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
 
-        if [ -z "${REF}" ]; then
+        EFFECTIVE_REF="$(printf '%s\n' "${latest_release_json}" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+
+        if [ -z "${EFFECTIVE_REF}" ]; then
             log "ERROR: Could not resolve latest release tag from GitHub API."
             exit 1
         fi
@@ -271,9 +272,9 @@ if [ "${MODE}" = "clone" ]; then
         REF_KIND="tag (latest release)"
     fi
 
-    log "Cloning librealsense using ${REF_KIND}: ${REF}"
-    git clone --branch "${REF}" --depth 1 https://github.com/realsenseai/librealsense.git "${DST_DIR}"
-    SOURCE_DIR="${DST_DIR}"
+    log "Cloning librealsense using ${REF_KIND}: ${EFFECTIVE_REF}"
+    git clone --branch "${EFFECTIVE_REF}" --depth 1 https://github.com/realsenseai/librealsense.git "${CLONE_DIR_EFFECTIVE}"
+    SOURCE_DIR="${CLONE_DIR_EFFECTIVE}"
 else
     log "Using existing librealsense source directory: ${SOURCE_DIR}"
 fi

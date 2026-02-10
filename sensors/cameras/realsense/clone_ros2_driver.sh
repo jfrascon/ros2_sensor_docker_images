@@ -101,7 +101,7 @@ local_repo="${CLONE_DIR}"
 log "Cloning the repository '${remote_repo}' into the path '${local_repo}'"
 # Determine which git ref to clone: use --remote-ref when provided, otherwise use the latest release tag.
 if [ -n "${REMOTE_REF}" ]; then
-    REF="${REMOTE_REF}"
+    EFFECTIVE_REF="${REMOTE_REF}"
     REF_KIND="remote ref"
 else
     if ! latest_release_json="$(curl -fsSL https://api.github.com/repos/realsenseai/realsense-ros/releases/latest)"; then
@@ -109,9 +109,9 @@ else
         exit 1
     fi
 
-    REF="$(printf '%s\n' "${latest_release_json}" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+    EFFECTIVE_REF="$(printf '%s\n' "${latest_release_json}" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
 
-    if [ -z "${REF}" ]; then
+    if [ -z "${EFFECTIVE_REF}" ]; then
         log "ERROR: Could not resolve latest release tag from GitHub API."
         exit 1
     fi
@@ -119,10 +119,10 @@ else
     REF_KIND="tag (latest release)"
 fi
 
-log "Cloning realsense-ros using ${REF_KIND}: ${REF}"
+log "Cloning realsense-ros using ${REF_KIND}: ${EFFECTIVE_REF}"
 # --depth 1: Clone only the latest commit to save time and bandwidth, as we don't need the full history for this use
 # case.
-git clone --branch "${REF}" --depth 1 "${remote_repo}" "${local_repo}"
+git clone --branch "${EFFECTIVE_REF}" --depth 1 "${remote_repo}" "${local_repo}"
 
 # Free space for Docker image builds; VCS history is not required.
 rm -rf "${local_repo}/.git"
