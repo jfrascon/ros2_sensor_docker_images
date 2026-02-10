@@ -5,28 +5,27 @@ set -euo pipefail
 usage() {
     cat <<'EOF'
 Usage:
-  install_librealsense2.sh --clone [--branch <branch> | --tag <tag>] [--option <NAME>=<VALUE> ...]
-  install_librealsense2.sh --source-dir <dir> [--option <NAME>=<VALUE> ...]
+  install_librealsense2_from_source.sh [--source-dir <dir>] [--remote-ref <ref>] [--clone-dir <dir>] [--option <NAME>=<VALUE> ...]
 
 Description:
-  Build and install librealsense2 from source
+  Build and install librealsense2 from source using one of two modes:
+  clone mode (default) or source-dir mode.
 
 Options:
-  --clone            Clone librealsense source code.
-  --branch <branch>  Clone the specified librealsense branch (example: master).
-  --tag <tag>        Clone the specified librealsense tag (example: v2.56.5).
   --source-dir <dir> Use an existing local librealsense source directory (no clone).
+  --remote-ref <ref> Clone the specified librealsense branch or tag (example: master or v2.56.5).
+  --clone-dir <dir>  Destination directory for the cloned repository (clone mode only).
   --option <NAME>=<VALUE>  Add CMake option (repeatable), where <VALUE> is ON|OFF|TRUE|FALSE.
   -h, --help         Show this help message.
 
 Notes:
-  - --clone and --source-dir are mutually exclusive.
-  - One mode is required: pass exactly one of --clone or --source-dir.
-  - --branch/--tag are valid only in clone mode, and are mutually exclusive.
-  - In clone mode, if neither --branch nor --tag is provided,
+  - Two modes are supported: clone mode (default) and source-dir mode.
+  - --source-dir selects source-dir mode. If omitted, clone mode is used.
+  - --remote-ref is valid only in clone mode.
+  - --clone-dir is valid only in clone mode.
+  - In clone mode, if --remote-ref is not provided,
     the latest published tag is used (GitHub releases/latest).
-  - In clone mode, /tmp/librealsense is used unless it already exists,
-    then a random /tmp/librealsense_XXXXXX directory is used.
+  - In clone mode, /tmp/librealsense is used unless --clone-dir is provided.
   - --option is repeatable, example:
     --option BUILD_WITH_CUDA=ON --option BUILD_EXAMPLES=OFF
 EOF
@@ -50,36 +49,31 @@ APT_GET_OPTS=(-o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-conf
 require_cmd getopt
 
 SHORT_OPTS="h"
-LONG_OPTS="help,clone,branch:,tag:,source-dir:,option:"
+LONG_OPTS="help,source-dir:,remote-ref:,clone-dir:,option:"
 PARSED_ARGS="$(getopt --options "${SHORT_OPTS}" --longoptions "${LONG_OPTS}" --name "$0" -- "$@")" || {
     usage
     exit 2
 }
 eval set -- "${PARSED_ARGS}"
 
-BRANCH=""
-TAG=""
+REMOTE_REF=""
 SOURCE_DIR=""
-USE_CLONE=0
+CLONE_DIR=""
 USE_SOURCE_DIR=0
 CMAKE_OPTIONS=()
 while true; do
     case "$1" in
-    --clone)
-        USE_CLONE=1
-        shift
-        ;;
-    --branch)
-        BRANCH="$2"
-        shift 2
-        ;;
-    --tag)
-        TAG="$2"
-        shift 2
-        ;;
     --source-dir)
         SOURCE_DIR="$2"
         USE_SOURCE_DIR=1
+        shift 2
+        ;;
+    --remote-ref)
+        REMOTE_REF="$2"
+        shift 2
+        ;;
+    --clone-dir)
+        CLONE_DIR="$2"
         shift 2
         ;;
     --option)
@@ -150,19 +144,8 @@ if [ "$#" -ne 0 ]; then
     exit 2
 fi
 
-# Validate mode selection and option combinations.
-if [ "${USE_CLONE}" -eq 1 ] && [ "${USE_SOURCE_DIR}" -eq 1 ]; then
-    log "ERROR: --clone and --source-dir cannot be used together."
-    usage
-    exit 2
-fi
-
-if [ "${USE_CLONE}" -eq 0 ] && [ "${USE_SOURCE_DIR}" -eq 0 ]; then
-    log "ERROR: One mode is required: pass --clone or --source-dir."
-    usage
-    exit 2
-fi
-
+# Packages required to build librealsense2 from source.
+# In clone mode, additional packages are needed to fetch the sources, and will be added later.
 APT_PACKAGES=(
     ca-certificates
     cmake
@@ -178,8 +161,14 @@ APT_PACKAGES=(
 )
 
 if [ "${USE_SOURCE_DIR}" -eq 1 ]; then
-    if [ -n "${BRANCH}" ] || [ -n "${TAG}" ]; then
-        log "ERROR: --branch/--tag can only be used with clone mode."
+    if [ -n "${REMOTE_REF}" ]; then
+        log "ERROR: --remote-ref can only be used with clone mode."
+        usage
+        exit 2
+    fi
+
+    if [ -n "${CLONE_DIR}" ]; then
+        log "ERROR: --clone-dir can only be used with clone mode."
         usage
         exit 2
     fi
@@ -205,12 +194,6 @@ if [ "${USE_SOURCE_DIR}" -eq 1 ]; then
     MODE="source_dir"
 else
     MODE="clone"
-
-    if [ -n "${BRANCH}" ] && [ -n "${TAG}" ]; then
-        log "ERROR: --branch and --tag cannot be used together."
-        usage
-        exit 2
-    fi
 
     # Clone mode needs repository/network tooling to fetch librealsense sources.
     APT_PACKAGES+=(curl git wget)
@@ -256,22 +239,23 @@ log "Installing dependencies required to build librealsense2."
 if [ "${MODE}" = "clone" ]; then
     default_dst_dir="/tmp/librealsense"
 
-    # If the default destination directory already exists, create a unique temporary directory instead to avoid
-    # conflicts.
-    if [ -e "${default_dst_dir}" ]; then
-        DST_DIR="$(mktemp -d /tmp/librealsense_XXXXXX)"
+    if [ -n "${CLONE_DIR}" ]; then
+        DST_DIR="${CLONE_DIR}"
     else
         DST_DIR="${default_dst_dir}"
     fi
 
+    if [ -d "${DST_DIR}" ]; then
+        log "ERROR: Clone directory already exists: ${DST_DIR}"
+        exit 1
+    fi
+
     log "Using destination directory: ${DST_DIR}"
 
-    if [ -n "${BRANCH}" ]; then
-        REF="${BRANCH}"
-        REF_KIND="branch"
-    elif [ -n "${TAG}" ]; then
-        REF="${TAG}"
-        REF_KIND="tag"
+    # Determine which git ref to clone: use --remote-ref when provided, otherwise use the latest release tag.
+    if [ -n "${REMOTE_REF}" ]; then
+        REF="${REMOTE_REF}"
+        REF_KIND="remote ref"
     else
         if ! latest_release_json="$(curl -fsSL https://api.github.com/repos/realsenseai/librealsense/releases/latest)"; then
             log "ERROR: Failed to query GitHub API for the latest librealsense release."
