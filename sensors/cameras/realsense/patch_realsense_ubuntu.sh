@@ -277,3 +277,15 @@ else
 fi
 
 bash "${patch_script}"
+
+# The script above will download, patch and build realsense-affected kernel modules (drivers).
+# Then it will attempt to insert the patched module instead of the active one.
+# If it fails, the original uvc modules will be restored.
+
+# Refer to the URL https://github.com/realsenseai/librealsense/blob/master/doc/installation.md#troubleshooting-installation-and-patch-related-issues
+# for troubleshooting installation and patch related issues.
+
+# Check the patched modules installation by examining the generated log as well as inspecting the latest entries in
+# kernel log.
+# The log should indicate that a new _uvcvideo_ driver has been registered.
+log "Restart the system and run: sudo dmesg | tail -n 50 (look for a new uvcvideo driver registration)"
