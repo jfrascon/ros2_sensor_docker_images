@@ -4,18 +4,21 @@ set -euo pipefail
 usage() {
     cat <<EOF
 Usage:
-  $(basename "${BASH_SOURCE[0]}") <remote_ref> <clone_dir> <ignored_keys_file> [--help | -h]
+  $(basename "${BASH_SOURCE[0]}") [--remote-ref <ref>] <clone_dir> <ignored_keys_file> [--help | -h]
 
 Description:
   Clone the RealSense ROS2 driver and install the custom launch file.
 
 Options:
+  --remote-ref <ref>  Branch or tag to clone (example: ros2-master or 4.57.6).
   -h, --help  Show this help message.
 
 Arguments:
-  remote_ref         Branch or tag to clone (example: ros2-master or 4.57.6).
   clone_dir          Destination directory for the cloned repository.
   ignored_keys_file  Existing file where rosdep ignored keys are appended.
+
+Notes:
+  - If --remote-ref is not provided, the latest published tag is used (GitHub releases/latest).
 EOF
 }
 
@@ -33,9 +36,10 @@ require_cmd() {
 require_cmd getopt
 require_cmd git
 require_cmd install
+require_cmd curl
 
 SHORT_OPTS="h"
-LONG_OPTS="help"
+LONG_OPTS="help,remote-ref:"
 PARSED_ARGS="$(getopt --options "${SHORT_OPTS}" --longoptions "${LONG_OPTS}" --name "$0" -- "$@")" || {
     usage
     exit 2
@@ -43,8 +47,13 @@ PARSED_ARGS="$(getopt --options "${SHORT_OPTS}" --longoptions "${LONG_OPTS}" --n
 
 eval set -- "${PARSED_ARGS}"
 
+REMOTE_REF=""
 while true; do
     case "$1" in
+    --remote-ref)
+        REMOTE_REF="$2"
+        shift 2
+        ;;
     -h | --help)
         usage
         exit 0
@@ -61,15 +70,14 @@ while true; do
     esac
 done
 
-if [ "$#" -ne 3 ]; then
-    log "ERROR: Expected 3 positional arguments: <remote_ref> <clone_dir> <ignored_keys_file>. Got: $*"
+if [ "$#" -ne 2 ]; then
+    log "ERROR: Expected 2 positional arguments: <clone_dir> <ignored_keys_file>. Got: $*"
     usage
     exit 2
 fi
 
-REMOTE_REF="${1}"
-CLONE_DIR="${2}"
-ROSDEP_IGNORED_KEYS_FILE="${3}"
+CLONE_DIR="${1}"
+ROSDEP_IGNORED_KEYS_FILE="${2}"
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -91,9 +99,30 @@ remote_repo="https://github.com/realsenseai/realsense-ros.git"
 local_repo="${CLONE_DIR}"
 
 log "Cloning the repository '${remote_repo}' into the path '${local_repo}'"
+# Determine which git ref to clone: use --remote-ref when provided, otherwise use the latest release tag.
+if [ -n "${REMOTE_REF}" ]; then
+    REF="${REMOTE_REF}"
+    REF_KIND="remote ref"
+else
+    if ! latest_release_json="$(curl -fsSL https://api.github.com/repos/realsenseai/realsense-ros/releases/latest)"; then
+        log "ERROR: Failed to query GitHub API for the latest realsense-ros release."
+        exit 1
+    fi
+
+    REF="$(printf '%s\n' "${latest_release_json}" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+
+    if [ -z "${REF}" ]; then
+        log "ERROR: Could not resolve latest release tag from GitHub API."
+        exit 1
+    fi
+
+    REF_KIND="tag (latest release)"
+fi
+
+log "Cloning realsense-ros using ${REF_KIND}: ${REF}"
 # --depth 1: Clone only the latest commit to save time and bandwidth, as we don't need the full history for this use
 # case.
-git clone --branch "${REMOTE_REF}" --depth 1 "${remote_repo}" "${local_repo}"
+git clone --branch "${REF}" --depth 1 "${remote_repo}" "${local_repo}"
 
 # Free space for Docker image builds; VCS history is not required.
 rm -rf "${local_repo}/.git"
