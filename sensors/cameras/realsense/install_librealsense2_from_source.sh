@@ -202,6 +202,8 @@ APT_PACKAGES=(
     libusb-1.0-0-dev
     libudev-dev
     pkg-config
+    udev
+    v4l-utils
     libgtk-3-dev
     libglfw3-dev
     libgl1-mesa-dev
