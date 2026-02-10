@@ -12,11 +12,11 @@ Description:
   clone mode (default) or source-dir mode.
 
 Options:
-  --source-dir <dir> Use an existing local librealsense source directory (no clone).
-  --remote-ref <ref> Clone the specified librealsense branch or tag (example: master or v2.56.5).
-  --clone-dir <dir>  Destination directory for the cloned repository (clone mode only).
+  --source-dir <dir>       Use an existing local librealsense source directory (no clone).
+  --remote-ref <ref>       Clone the specified librealsense branch or tag (example: master or v2.56.5).
+  --clone-dir <dir>        Destination directory for the cloned repository (clone mode only).
   --option <NAME>=<VALUE>  Add CMake option (repeatable), where <VALUE> is ON|OFF|TRUE|FALSE.
-  -h, --help         Show this help message.
+  -h, --help               Show this help message.
 
 Notes:
   - Two modes are supported: clone mode (default) and source-dir mode.
@@ -25,7 +25,8 @@ Notes:
   - --clone-dir is valid only in clone mode.
   - In clone mode, if --remote-ref is not provided,
     the latest published tag is used (GitHub releases/latest).
-  - In clone mode, /tmp/librealsense is used unless --clone-dir is provided.
+  - In clone mode, if --clone-dir is not provided, a temporary directory like
+    /tmp/librealsense2_XXXXXX is created with mktemp (the Xs are replaced).
   - --option is repeatable, example:
     --option BUILD_WITH_CUDA=ON --option BUILD_EXAMPLES=OFF
 EOF
@@ -237,17 +238,16 @@ log "Installing dependencies required to build librealsense2."
 "${SUDO_CMD[@]}" env "${APT_ENV[@]}" apt-get "${APT_GET_OPTS[@]}" install -y --no-install-recommends "${APT_PACKAGES[@]}"
 
 if [ "${MODE}" = "clone" ]; then
-    default_dst_dir="/tmp/librealsense"
-
     if [ -n "${CLONE_DIR}" ]; then
         CLONE_DIR_EFFECTIVE="${CLONE_DIR}"
-    else
-        CLONE_DIR_EFFECTIVE="${default_dst_dir}"
-    fi
 
-    if [ -d "${CLONE_DIR_EFFECTIVE}" ]; then
-        log "ERROR: Clone directory already exists: ${CLONE_DIR_EFFECTIVE}"
-        exit 1
+        if [ -d "${CLONE_DIR_EFFECTIVE}" ]; then
+            log "ERROR: Clone directory already exists: ${CLONE_DIR_EFFECTIVE}"
+            exit 1
+        fi
+    else
+        require_cmd mktemp
+        CLONE_DIR_EFFECTIVE="$(mktemp -d /tmp/librealsense2_XXXXXX)"
     fi
 
     log "Using destination directory: ${CLONE_DIR_EFFECTIVE}"
