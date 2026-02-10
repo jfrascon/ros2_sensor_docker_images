@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# This script builds and installs librealsense2 from source.
+# It supports clone mode (default), which fetches sources from GitHub, and source-dir mode, which uses an existing local
+# librealsense tree.
+
 usage() {
     cat <<EOF
 Usage:
