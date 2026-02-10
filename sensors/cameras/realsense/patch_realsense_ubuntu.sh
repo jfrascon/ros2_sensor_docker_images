@@ -105,6 +105,12 @@ if [ "$#" -ne 0 ]; then
     exit 2
 fi
 
+# Detect likely container environment to avoid confusion
+if [ -f "/.dockerenv" ] || [ -f "/run/.containerenv" ]; then
+    log "ERROR: This must be run on the HOST, not inside a container" >&2
+    exit 1
+fi
+
 # Ensure this script runs only on Ubuntu LTS host
 if [ ! -r /etc/os-release ]; then
     log "ERROR: /etc/os-release not found" >&2
