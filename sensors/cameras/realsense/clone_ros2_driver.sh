@@ -32,11 +32,12 @@ require_cmd() {
     fi
 }
 
-# Minimal prerequisites required before argument parsing
-require_cmd getopt
-require_cmd git
-require_cmd install
-require_cmd curl
+cleanup_clone_dir_on_error() {
+    if [ -n "${local_repo:-}" ] && [ -d "${local_repo}" ]; then
+        log "ERROR: git clone failed, removing destination directory: ${local_repo}" >&2
+        rm -rf "${local_repo}"
+    fi
+}
 
 SHORT_OPTS="h"
 LONG_OPTS="help,remote-ref:"
@@ -98,12 +99,13 @@ cd "${parent_dir}" # Set current directory
 remote_repo="https://github.com/realsenseai/realsense-ros.git"
 local_repo="${CLONE_DIR}"
 
-log "Cloning the repository '${remote_repo}' into the path '${local_repo}'"
 # Determine which git ref to clone: use --remote-ref when provided, otherwise use the latest release tag.
 if [ -n "${REMOTE_REF}" ]; then
     EFFECTIVE_REF="${REMOTE_REF}"
-    REF_KIND="remote ref"
+    REF_KIND="remote reference"
 else
+    require_cmd curl
+
     if ! latest_release_json="$(curl -fsSL https://api.github.com/repos/realsenseai/realsense-ros/releases/latest)"; then
         log "ERROR: Failed to query GitHub API for the latest realsense-ros release" >&2
         exit 1
@@ -116,13 +118,21 @@ else
         exit 1
     fi
 
-    REF_KIND="tag (latest release)"
+    REF_KIND="latest release"
 fi
 
-log "Cloning realsense-ros using ${REF_KIND}: ${EFFECTIVE_REF}"
+require_cmd git
+
+log "Cloning '${remote_repo}' using ${REF_KIND} '${EFFECTIVE_REF}'"
+log "Using destination directory '${local_repo}'"
+
+# Enable a temporary ERR trap so a failed clone does not leave a partial destination directory.
+# The trap is cleared immediately after a successful clone.
+trap 'cleanup_clone_dir_on_error' ERR
 # --depth 1: Clone only the latest commit to save time and bandwidth, as we don't need the full history for this use
 # case.
 git clone --branch "${EFFECTIVE_REF}" --depth 1 "${remote_repo}" "${local_repo}"
+trap - ERR
 
 # Free space for Docker image builds; VCS history is not required.
 rm -rf "${local_repo}/.git"
