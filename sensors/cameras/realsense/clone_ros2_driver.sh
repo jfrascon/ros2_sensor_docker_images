@@ -25,9 +25,9 @@ EOF
 log() { printf '[%s] %s\n' "$(date -u +'%Y-%m-%d_%H-%M-%S')" "$*"; }
 
 require_cmd() {
-    local cmd="$1"
+    local cmd="${1}"
     if ! command -v "${cmd}" >/dev/null 2>&1; then
-        log "ERROR: Missing required command: ${cmd}"
+        log "ERROR: Missing required command: ${cmd}" >&2
         exit 1
     fi
 }
@@ -49,9 +49,9 @@ eval set -- "${PARSED_ARGS}"
 
 REMOTE_REF=""
 while true; do
-    case "$1" in
+    case "${1}" in
     --remote-ref)
-        REMOTE_REF="$2"
+        REMOTE_REF="${2}"
         shift 2
         ;;
     -h | --help)
@@ -63,7 +63,7 @@ while true; do
         break
         ;;
     *)
-        log "ERROR: Unexpected option: $1"
+        log "ERROR: Unexpected option: ${1}" >&2
         usage
         exit 2
         ;;
@@ -71,7 +71,7 @@ while true; do
 done
 
 if [ "$#" -ne 2 ]; then
-    log "ERROR: Expected 2 positional arguments: <clone_dir> <ignored_keys_file>. Got: $*"
+    log "ERROR: Expected 2 positional arguments: <clone_dir> <ignored_keys_file>. Got: $*" >&2
     usage
     exit 2
 fi
@@ -82,12 +82,12 @@ ROSDEP_IGNORED_KEYS_FILE="${2}"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ -d "${CLONE_DIR}" ]; then
-    log "ERROR: Destination directory already exists: ${CLONE_DIR}. Please remove it or choose a new destination."
+    log "ERROR: Destination directory already exists: ${CLONE_DIR}. Please remove it or choose a new destination" >&2
     exit 1
 fi
 
 if [ ! -f "${ROSDEP_IGNORED_KEYS_FILE}" ]; then
-    log "ERROR: Rosdep ignored keys file does not exist: ${ROSDEP_IGNORED_KEYS_FILE}"
+    log "ERROR: Rosdep ignored keys file does not exist: ${ROSDEP_IGNORED_KEYS_FILE}" >&2
     exit 1
 fi
 
@@ -105,14 +105,14 @@ if [ -n "${REMOTE_REF}" ]; then
     REF_KIND="remote ref"
 else
     if ! latest_release_json="$(curl -fsSL https://api.github.com/repos/realsenseai/realsense-ros/releases/latest)"; then
-        log "ERROR: Failed to query GitHub API for the latest realsense-ros release."
+        log "ERROR: Failed to query GitHub API for the latest realsense-ros release" >&2
         exit 1
     fi
 
     EFFECTIVE_REF="$(printf '%s\n' "${latest_release_json}" | sed -n 's/^[[:space:]]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
 
     if [ -z "${EFFECTIVE_REF}" ]; then
-        log "ERROR: Could not resolve latest release tag from GitHub API."
+        log "ERROR: Could not resolve latest release tag from GitHub API" >&2
         exit 1
     fi
 
@@ -155,6 +155,6 @@ for key in "${rosdep_ignored_keys[@]}"; do
         printf '%s\n' "${key}" >>"${ROSDEP_IGNORED_KEYS_FILE}"
         log "Added rosdep key to ignore, '${key}', to file '${ROSDEP_IGNORED_KEYS_FILE}'"
     else
-        log "Rosdep key to ignore '${key}' already exists in file '${ROSDEP_IGNORED_KEYS_FILE}'. Skipping adding it again."
+        log "Rosdep key to ignore '${key}' already exists in file '${ROSDEP_IGNORED_KEYS_FILE}'. Skipping adding it again"
     fi
 done
