@@ -12,8 +12,18 @@ Usage:
   $(basename "${BASH_SOURCE[0]}") [--source-dir <dir>] [--remote-ref <ref>] [--clone-dir <dir>] [--option <NAME>=<VALUE> ...]
 
 Description:
-  Build and install librealsense2 from source using one of two modes:
-  clone mode (default) or source-dir mode.
+  Build and install librealsense2 from source.
+  If the flag --source-dir is provided along with a directory argument, the
+  script uses the provided directory as the source of librealsense and builds
+  it. When the flag --source-dir is provided, the flags --remote-ref and
+  --clone-dir are not valid and an error is raised if they are used.
+  If the flag --source-dir is not provided, the script clones the librealsense
+  repository from GitHub and builds it. In this case, if the flag --remote-ref
+  is provided, it specifies the branch or tag to clone (example: master or
+  v2.56.5). If --remote-ref is not provided, the latest published tag is used
+  (GitHub releases/latest). In clone mode, the flag --clone-dir can be used to
+  specify the destination directory for the clone. If --clone-dir is not
+  provided, a temporary directory in the /tmp folder is created for the clone.
 
 Options:
   --source-dir <dir>       Use an existing local librealsense source directory (no clone).
@@ -23,14 +33,6 @@ Options:
   -h, --help               Show this help message.
 
 Notes:
-  - Two modes are supported: clone mode (default) and source-dir mode.
-  - --source-dir selects source-dir mode. If omitted, clone mode is used.
-  - --remote-ref is valid only in clone mode.
-  - --clone-dir is valid only in clone mode.
-  - In clone mode, if --remote-ref is not provided,
-    the latest published tag is used (GitHub releases/latest).
-  - In clone mode, if --clone-dir is not provided, a temporary directory like
-    /tmp/librealsense2_XXXXXX is created with mktemp (the Xs are replaced).
   - --option is repeatable, example:
     --option BUILD_WITH_CUDA=ON --option BUILD_EXAMPLES=OFF
 EOF
@@ -365,7 +367,7 @@ if [ "${USE_SOURCE_DIR}" -eq 0 ]; then
     git clone --branch "${REMOTE_REF}" --depth 1 "${librealsense_repo_url}" "${CLONE_DIR}"
     trap - ERR
 
-    # Free space for Docker image builds; VCS history is not required.
+    # Free space; VCS history is not required.
     rm -rf "${CLONE_DIR}/.git"
     SOURCE_DIR="${CLONE_DIR}"
 else
