@@ -407,4 +407,4 @@ log "Installing librealsense to the host system"
 "${SUDO_CMD[@]}" make install
 "${SUDO_CMD[@]}" ldconfig
 
-log "Done. librealsense2 has been installed from source in ${SOURCE_DIR}"
+log "Done. librealsense2 has been installed from source"
