@@ -406,8 +406,10 @@ rosdep_ignored_keys=("librealsense2: {ubuntu: []}")
 # -q, --quiet: Suppress normal output.
 # -x, --line-regexp: Select only those matches that exactly match the whole line.
 # -F, --fixed-strings: Interpret the pattern as fixed strings, not regular expressions.
+# -- "${key}": -- signals the end of options for grep and treats "${key}" as a positional argument, allowing it to
+#              start with a dash if needed.
 for key in "${rosdep_ignored_keys[@]}"; do
-    if ! grep -qxF -- "${key}" -- "${ROSDEP_IGNORED_KEYS_FILE}"; then
+    if ! grep -qxF -- "${key}" "${ROSDEP_IGNORED_KEYS_FILE}"; then
         printf '%s\n' "${key}" >>"${ROSDEP_IGNORED_KEYS_FILE}"
         log "Added rosdep key to ignore, '${key}', to file '${ROSDEP_IGNORED_KEYS_FILE}'"
     else
