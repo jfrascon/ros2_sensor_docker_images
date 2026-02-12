@@ -1,0 +1,38 @@
+# https://docs.docker.com/compose/environment-variables/#the-env-file
+services:
+  realsense_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    ipc: host
+    volumes:
+      - /dev:/dev # to access camera video and USB devices
+      # Why map /run/udev from host into the container?
+      # - udev runs on the HOST and stores a volatile database of device properties/states under /run/udev.
+      # - Mounting it read-only lets tools and libraries inside the container read udev attributes (IDs, symlinks,
+      #   tags) so their view matches the host.
+      # - It improves detection/consistency when dealing with hotplug. Note: udev events do NOT propagate into
+      #   the container; this mount is only for reading metadata/state.
+      - /run/udev:/run/udev:ro
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./realsense.yaml:/tmp/params.yaml
+      - ./exec_launch_file.sh:/tmp/exec_launch_file.sh
+    device_cgroup_rules:
+      - "c 81:* rwm" # 81 is video4linux
+      - "c 189:* rwm" # 189 is usb_device
+    environment:
+      NAMESPACE: ${NAMESPACE:-} # Optional
+      ROBOT_NAME: ${ROBOT_NAME:-robot} # Required
+      PARAMS_FILE: /tmp/params.yaml # Required
+      TOPIC_REMAPPINGS: ${TOPIC_REMAPPINGS:-} # Optional
+      NODE_OPTIONS: "${NODE_OPTIONS:-}" # Optional
+      LOGGING_OPTIONS: "${LOGGING_OPTIONS:-}" # Optional
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      RCUTILS_LOGGING_USE_STDOUT: "1"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-11}
+      RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_zenoh_cpp}
