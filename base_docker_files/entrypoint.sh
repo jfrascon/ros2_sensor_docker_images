@@ -2,7 +2,10 @@
 
 ws="${IMAGE_MAIN_USER_WORKSPACE:-}"
 
-# -r FILE: True if file is readable by you.
+# -r FILE: True if file is readable by the current user.
+# This is used to check if the ROS2 workspace setup script exists and can be sourced.
+# If the file is not found or not readable, the script will skip sourcing it and continue without settingup the ROS2
+# environment, which may lead to errors when trying to run ROS2 commands later on.
 [ -n "${ws}" ] && [ -r "${ws}/install/setup.bash" ] && . "${ws}/install/setup.bash"
 
 # Add ~/.local/bin to PATH if it's not already there, so that user-installed Python packages are found.
