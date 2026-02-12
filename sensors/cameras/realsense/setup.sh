@@ -346,6 +346,8 @@ if [ -n "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ]; then
             exit 2
         fi
 
+        log "Parsed librealsense2 compile flag: ${opt_name}=${opt_value}"
+
         LIBREALSENSE2_INSTALL_OPTIONS+=(--option "${opt_name}=${opt_value}")
     done <"${LIBREALSENSE2_COMPILE_FLAGS_FILE}"
 fi
