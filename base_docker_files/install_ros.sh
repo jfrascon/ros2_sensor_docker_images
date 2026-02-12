@@ -158,6 +158,7 @@ install_pkgs ros-${ROS_DISTRO}-ros-core \
     ros-${ROS_DISTRO}-rmw-fastrtps-cpp \
     ros-${ROS_DISTRO}-rmw-fastrtps-dynamic-cpp \
     ros-${ROS_DISTRO}-rmw-zenoh-cpp \
+    ros-${ROS_DISTRO}-rviz2 \
     python3-colcon-common-extensions \
     python3-colcon-metadata \
     python3-colcon-mixin \
