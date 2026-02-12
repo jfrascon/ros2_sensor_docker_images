@@ -3,6 +3,7 @@ install/
 devel/
 log/
 tmp/
+*__pycache__/
 .catkin_tools/
 .devcontainer/
 .vscode/
