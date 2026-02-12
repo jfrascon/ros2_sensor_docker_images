@@ -1,0 +1,4 @@
+# This file contains the remote reference to be cloned for each item.
+librealsense2 v2.56.5
+realsense-ros 4.57.6
+ros2_launch_helpers main
