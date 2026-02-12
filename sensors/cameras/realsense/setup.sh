@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
     cat <<EOF
 Usage:
-  $(basename "${BASH_SOURCE[0]}") [--librealsense2_compile_flags <file>] <pkgs_dir> <refs_file> <ignored_keys_file> [--help | -h]
+  $(basename "${BASH_SOURCE[0]}") [options] <pkgs_dir> <refs_file> <ignored_keys_file>
 
 Description:
   Install librealsense2 from source, clone required repositories, install the custom launch file,
@@ -17,7 +17,7 @@ Options:
   -h, --help                            Show this help message.
 
 Arguments:
-  pkgs_dir           Parent directory where repositories will be cloned.
+  pkgs_dir           Directory where repositories will be cloned (created if missing).
   refs_file          File containing required repository refs:
                      librealsense2 <ref>
                      realsense-ros <ref>
