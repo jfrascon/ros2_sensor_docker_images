@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
 # This script launches a Docker container with the RealSense ROS2 driver using Docker compose files.
-# If mode is 'automatic', the compose file runs 'run_realsense_launch.sh' in the container.
-# If mode is 'manual', the compose file just starts the container and you can run
+# If mode is 'automatic', the container will automatically execute the script '/tmp/run_realsense_launch.sh' that
+# launches the ROS2 driver, and you can check the logs with 'docker compose logs -f <service_name>'.
+# If mode is 'manual', the container will start without executing the ROS2 driver, allowing you to connect to it with
+# 'docker compose exec -it <service_name> bash' and launch the ROS2 driver manually by running the script
 # '/tmp/run_realsense_launch_in_terminal.sh' from an interactive shell.
 
 print_repeats() {
