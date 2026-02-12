@@ -1,7 +1,7 @@
 services:
   realsense_srvc:
     volumes:
-      - ./exec_manual_launch.sh:/tmp/exec_manual_launch.sh
+      - ./run_shell.sh:/tmp/run_shell.sh
     # init: true enables a tiny init (tini) as PID 1 inside the container.
     # It forwards signals (SIGTERM/SIGINT) to the app and reaps zombie processes from child workers, preventing dirty
     # shutdowns and resource leaks.
@@ -12,5 +12,5 @@ services:
     tty: true
     # To launch the ROS2 driver manually inside the container, open a terminal, connect to the container with:
     #   docker exec -it <container_name> bash
-    # Run /tmp/exec_manual_launch.sh:
+    # Run /tmp/run_shell.sh:
     command: ["bash"]
