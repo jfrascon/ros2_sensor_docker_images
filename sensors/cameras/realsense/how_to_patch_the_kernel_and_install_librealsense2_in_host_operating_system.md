@@ -1266,4 +1266,13 @@ URL correcta: [https://dev.realsenseai.com/docs/build-configuration](https://dev
 
 Finalmente, indicarte que en la URL [https://support.realsenseai.com/hc/en-us/community/posts/](https://support.realsenseai.com/hc/en-us/community/posts/) puedes encontrar una **FAQ** muy útil, con preguntas y respuestas sobre la librería `librealsense2` y sobre las cámaras RealSense en general.
 
-Bueno, este es el final de la guía, espero que te haya sido de utilidad. Si tienes cualquier duda o pregunta, no dudes en contactarme. ¡Suerte con tu proyecto!
+En el fichero [examples.md](examples.md) tienes condensadas las operaciones que te he ido describiendo más arriba, pero en formato de comandos de terminal, para que puedas copiarlos y pegarlos directamente en tu terminal:
+
+- Instalar reglas udev en el sistema operativo host para comunicarte con las cámaras RealSense.
+- Desinstalar las reglas udev en el sistema operativo host para dejar de comunicarte con las cámaras RealSense.
+- Parchear los módulos del kernel en el sistema operativo host para mejorar el soporte de las cámaras RealSense.
+- Instalar la librería librealsense2 en el sistema operativo host.
+
+Bueno, este es el final de la guía, espero que te haya sido de utilidad. Si tienes cualquier duda o pregunta, no dudes en contactarme.
+
+¡Suerte con tu proyecto!
