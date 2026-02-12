@@ -14,6 +14,7 @@ services:
       # - It improves detection/consistency when dealing with hotplug. Note: udev events do NOT propagate into
       #   the container; this mount is only for reading metadata/state.
       - /run/udev:/run/udev:ro
+      - /etc/udev/rules.d:/etc/udev/rules.d:ro
       # This line allows running graphical applications in the container and visualizing them on the host.
       # This works provided that the host has a display connected (so the X11 socket exists) and the
       # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
