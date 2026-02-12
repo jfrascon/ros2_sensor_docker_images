@@ -62,7 +62,7 @@ required_context_files=(
   rosdep_init_update_install.sh
   colcon_mixin_metadata.sh
   entrypoint.sh
-  refs_file.txt
+  refs.txt
   install_librealsense2_from_source.sh
   setup.sh
   compile.sh
@@ -151,7 +151,7 @@ log "Executing script 'setup.sh'"
 pkgs_dir="${IMAGE_MAIN_USER_WORKSPACE}/src"
 mkdir --verbose --parent "${pkgs_dir}"
 
-setup_args=( "${pkgs_dir}" "/tmp/context/refs_file.txt" "${rosdep_ignored_keys_file}" )
+setup_args=( "${pkgs_dir}" "/tmp/context/refs.txt" "${rosdep_ignored_keys_file}" )
 
 if [ -f "/tmp/context/librealsense2_compile_flags.txt" ]; then
   setup_args+=( "--librealsense2_compile_flags" "/tmp/context/librealsense2_compile_flags.txt" )

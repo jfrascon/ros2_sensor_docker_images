@@ -176,7 +176,7 @@ if __name__ == '__main__':
         realsense_dir.joinpath('install_librealsense2_from_source.sh'),
         tmp_context_dir.joinpath('install_librealsense2_from_source.sh'),
     )
-    shutil.copy2(examples_dir.joinpath('refs_file.txt'), tmp_context_dir.joinpath('refs_file.txt'))
+    shutil.copy2(examples_dir.joinpath('refs.txt'), tmp_context_dir.joinpath('refs.txt'))
     shutil.copy2(
         examples_dir.joinpath('librealsense2_compile_flags.txt'),
         tmp_context_dir.joinpath('librealsense2_compile_flags.txt'),
