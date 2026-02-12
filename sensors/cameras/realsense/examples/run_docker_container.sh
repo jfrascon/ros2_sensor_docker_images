@@ -32,7 +32,6 @@ print_banner_text() {
 NAMESPACE_DEF=""
 ROBOT_NAME_DEF="robot"
 ROS_DOMAIN_ID_DEF="11"
-RMW_IMPLEMENTATION_DEF="rmw_zenoh_cpp"
 NODE_OPTIONS_DEF="name=realsense_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
 LOGGING_OPTIONS_DEF="log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
 
@@ -63,12 +62,11 @@ Options:
                             NAMESPACE (default: ${NAMESPACE_DEF})
                             ROBOT_NAME (default: ${ROBOT_NAME_DEF})
                             ROS_DOMAIN_ID (default: ${ROS_DOMAIN_ID_DEF})
-                            RMW_IMPLEMENTATION (default: ${RMW_IMPLEMENTATION_DEF})
                             NODE_OPTIONS (default: ${NODE_OPTIONS_DEF})
                             LOGGING_OPTIONS (default: ${LOGGING_OPTIONS_DEF})
-                            ROS_LOCALHOST_ONLY=1|0 (up to ROS2 Humble)
-                            ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT (since ROS2 Jazzy)
-                            ROS_STATIC_PEERS='192.168.0.1;remote.com' (since ROS2 Jazzy)
+                            ROS_LOCALHOST_ONLY=1|0 (up to ROS2 Humble, not set by default)
+                            ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT (since ROS2 Jazzy, not set by default)
+                            ROS_STATIC_PEERS='192.168.0.1;remote.com' (since ROS2 Jazzy, not set by default)
 
   --help, -h                Show this help and exit
 EOF
@@ -149,14 +147,13 @@ fi
 NAMESPACE="${NAMESPACE_DEF}"
 ROBOT_NAME="${ROBOT_NAME_DEF}"
 ROS_DOMAIN_ID="${ROS_DOMAIN_ID_DEF}"
-RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION_DEF}"
 NODE_OPTIONS="${NODE_OPTIONS_DEF}"
 LOGGING_OPTIONS="${LOGGING_OPTIONS_DEF}"
 
 extra_env_vars=()
 
 # Process --env KEY=VALUE options.
-# Recognized keys (NAMESPACE, ROBOT_NAME, ROS_DOMAIN_ID, RMW_IMPLEMENTATION, NODE_OPTIONS, LOGGING_OPTIONS) are
+# Recognized keys (NAMESPACE, ROBOT_NAME, ROS_DOMAIN_ID, NODE_OPTIONS, LOGGING_OPTIONS) are
 # assigned to specific variables, while unrecognized ones are collected in 'extra_env_vars' to be passed as-is to the
 # container.
 for env_kv in "${env_vars[@]}"; do
@@ -192,7 +189,8 @@ for env_kv in "${env_vars[@]}"; do
         ROS_DOMAIN_ID="${env_val}"
         ;;
     RMW_IMPLEMENTATION)
-        RMW_IMPLEMENTATION="${env_val}"
+        echo "Error: --env RMW_IMPLEMENTATION is not allowed; it is fixed in docker_compose_base.yaml" >&2
+        exit 1
         ;;
     NODE_OPTIONS)
         NODE_OPTIONS="${env_val}"
@@ -227,7 +225,6 @@ trap 'rm -f "${env_file}"' EXIT
     printf "NAMESPACE=%s\n" "${NAMESPACE}"
     printf "ROBOT_NAME=%s\n" "${ROBOT_NAME}"
     printf "ROS_DOMAIN_ID=%s\n" "${ROS_DOMAIN_ID}"
-    printf "RMW_IMPLEMENTATION=%s\n" "${RMW_IMPLEMENTATION}"
     printf "NODE_OPTIONS=%s\n" "${NODE_OPTIONS}"
     printf "LOGGING_OPTIONS=%s\n" "${LOGGING_OPTIONS}"
 
@@ -253,3 +250,7 @@ print_banner_text "=" "Launching RealSense in a Docker container of image '${IMG
 xhost +local:
 
 IMG_ID="${IMG_ID}" ENV_FILE="${env_file}" docker compose "${compose_files[@]}" up -d
+
+# if [ "${mode}" == "automatic" ]; then
+# IMG_ID="${IMG_ID}" ENV_FILE="${env_file}" docker compose "${compose_files[@]}" up -d
+# fi
