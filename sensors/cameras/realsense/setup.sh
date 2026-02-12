@@ -122,15 +122,15 @@ if [ ! -f "${ROSDEP_IGNORED_KEYS_FILE}" ]; then
 fi
 
 # Validate that if --librealsense2_compile_flags is provided the value is a non-empty file path.
-if [ "${LIBREALSENSE2_COMPILE_FLAGS_FILE_SET}" -eq 1 ] && [ -z "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ]; then
-    log "ERROR: --librealsense2_compile_flags requires a non-empty file path" >&2
-    exit 2
-fi
-
 # Validate that if --librealsense2_compile_flags is provided the file exists.
-if [ -n "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ] && [ ! -f "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ]; then
-    log "ERROR: librealsense2 compile flags file does not exist: ${LIBREALSENSE2_COMPILE_FLAGS_FILE}" >&2
-    exit 1
+if [ "${LIBREALSENSE2_COMPILE_FLAGS_FILE_SET}" -eq 1 ]; then
+    if [ -z "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ]; then
+        log "ERROR: --librealsense2_compile_flags requires a non-empty file path" >&2
+        exit 1
+    elif [ ! -f "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ]; then
+        log "ERROR: librealsense2 compile flags file does not exist: ${LIBREALSENSE2_COMPILE_FLAGS_FILE}" >&2
+        exit 1
+    fi
 fi
 
 require_cmd git
