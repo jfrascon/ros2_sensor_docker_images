@@ -152,7 +152,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Dockerfile must exist.
-    dockerfile = umx_dir.joinpath('Dockerfile')
+    dockerfile = examples_dir.joinpath('Dockerfile')
 
     if not dockerfile.is_file():
         print(f"Error: Dockerfile '{dockerfile}' does not exist or is not a file", file=sys.stderr)

@@ -73,8 +73,8 @@ def run_command(
 if __name__ == '__main__':
     this_file = Path(__file__).resolve()
     examples_dir = this_file.parent
-    robosense = examples_dir.parent
-    lidars_dir = robosense.parent
+    robosense_dir = examples_dir.parent
+    lidars_dir = robosense_dir.parent
     sensors_dir = lidars_dir.parent
     project_dir = sensors_dir.parent
     base_docker_files_dir = project_dir.joinpath('base_docker_files')
@@ -151,7 +151,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     # Dockerfile must exist.
-    dockerfile = robosense.joinpath('Dockerfile')
+    dockerfile = examples_dir.joinpath('Dockerfile')
 
     if not dockerfile.is_file():
         print(f"Error: Dockerfile '{dockerfile}' does not exist or is not a file", file=sys.stderr)
@@ -170,9 +170,9 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f'Error copying {file} to {tmp_context_dir}: {e}')
 
-    shutil.copy2(robosense.joinpath('install.sh'), tmp_context_dir.joinpath('install.sh'))
-    shutil.copy2(robosense.joinpath('compile.sh'), tmp_context_dir.joinpath('compile.sh'))
-    shutil.copy2(robosense.joinpath('eut_sensor.launch.py'), tmp_context_dir.joinpath('eut_sensor.launch.py'))
+    shutil.copy2(robosense_dir.joinpath('install.sh'), tmp_context_dir.joinpath('install.sh'))
+    shutil.copy2(robosense_dir.joinpath('compile.sh'), tmp_context_dir.joinpath('compile.sh'))
+    shutil.copy2(robosense_dir.joinpath('eut_sensor.launch.py'), tmp_context_dir.joinpath('eut_sensor.launch.py'))
 
     # ------------------------------------------------------------------
     # Build command
