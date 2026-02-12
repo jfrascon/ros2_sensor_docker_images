@@ -33,7 +33,8 @@ git clone --branch "${REMOTE_REF}" --depth 1 "${LIBREALSENSE_REPO}" "${CLONE_DIR
 ## Install udev rules in the host OS to communicate with RealSense cameras
 
 ```bash
-bash "${CLONE_DIR}/scripts/setup_udev_rules.sh"
+cd "${CLONE_DIR}"
+bash "./scripts/setup_udev_rules.sh"
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
@@ -41,7 +42,8 @@ sudo udevadm trigger
 ## Uninstall udev rules in the host OS to stop communicating with RealSense cameras
 
 ```bash
-bash "${CLONE_DIR}/scripts/setup_udev_rules.sh" --uninstall
+cd "${CLONE_DIR}"
+bash "./scripts/setup_udev_rules.sh" --uninstall
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
@@ -74,13 +76,13 @@ fi
 log "Detected host OS: ${PRETTY_NAME:-Ubuntu LTS} (${VERSION_CODENAME:-${UBUNTU_CODENAME:-unknown}}), kernel: $(uname -r)"
 
 if [ "${USE_L4T}" -eq 1 ]; then
-    patch_script="${CLONE_DIR}/scripts/patch-realsense-ubuntu-L4T.sh"
+    patch_script="./scripts/patch-realsense-ubuntu-L4T.sh"
     log "Patching kernel modules for Jetson L4T"
 else
-    patch_script="${CLONE_DIR}/scripts/patch-realsense-ubuntu-lts-hwe.sh"
+    patch_script="./scripts/patch-realsense-ubuntu-lts-hwe.sh"
     log "Patching kernel modules for Ubuntu LTS"
 fi
-
+cd "${CLONE_DIR}"
 bash "${patch_script}"
 log "Restart the system and run: sudo dmesg | tail -n 50 (look for a new uvcvideo driver registration)"
 ```
