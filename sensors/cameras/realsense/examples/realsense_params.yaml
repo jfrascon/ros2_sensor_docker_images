@@ -9,79 +9,82 @@
 # It is not mandatory to set all the parameters of your device in a yaml file. You can just set the ones you need to
 # change from their default value. Just copy the parameters you want to change to a yaml file and set their value.
 
-serial_no: "" # choose device by serial number
-device_type: "" # choose device by type
-usb_port_id: "" # choose device by usb port id
-camera_name: camera # camera unique name
-base_frame_id: link # Root frame of the sensors transform tree
+# Configuration applicable to all realsense nodes, no matter its name.
+/**:
+  ros__parameters:
+    serial_no: "" # choose device by serial number
+    device_type: "" # choose device by type
+    usb_port_id: "" # choose device by usb port id
+    camera_name: camera # camera unique name
+    base_frame_id: link # Root frame of the sensors transform tree
 
-# Enable/diable streams
-enable_accel: false # 'enable accel stream'
-enable_color: true # enable color stream
-enable_depth: true # enable depth stream
-enable_gyro: false # 'enable gyro stream'
-enable_infra: false # enable infra0 stream
-enable_infra1: false # enable infra1 stream
-enable_infra2: false # enable infra2 stream
-enable_motion: false # 'enable motion stream (IMU) for DDS devices'
-enable_rgbd: false # 'enable rgbd topic'
-enable_sync: false # 'enable sync mode'
+    # Enable/diable streams
+    enable_accel: false # 'enable accel stream'
+    enable_color: true # enable color stream
+    enable_depth: true # enable depth stream
+    enable_gyro: false # 'enable gyro stream'
+    enable_infra: false # enable infra0 stream
+    enable_infra1: false # enable infra1 stream
+    enable_infra2: false # enable infra2 stream
+    enable_motion: false # 'enable motion stream (IMU) for DDS devices'
+    enable_rgbd: false # 'enable rgbd topic'
+    enable_sync: false # 'enable sync mode'
 
-# Enable/disable filters
-decimation_filter.enable: false # enable_decimation_filter
-disparity_filter.enable: false # enable_disparity_filter
-hole_filling_filter.enable: false # enable_hole_filling_filter
-rotation_filter.enable: false # enable rotation_filter
-spatial_filter.enable: false # enable_spatial_filter
-temporal_filter.enable: false # enable_temporal_filter
+    # Enable/disable filters
+    decimation_filter.enable: false # enable_decimation_filter
+    disparity_filter.enable: false # enable_disparity_filter
+    hole_filling_filter.enable: false # enable_hole_filling_filter
+    rotation_filter.enable: false # enable rotation_filter
+    spatial_filter.enable: false # enable_spatial_filter
+    temporal_filter.enable: false # enable_temporal_filter
 
-# Rest of parameters
-accel_fps: 0 # ''
-accelerate_gpu_with_glsl: false # enable GPU acceleration with GLSL. When compiled w ACCELERATE_GPU_WITH_GLSL=ON
-align_depth.enable: false # enable align depth filter
-angular_velocity_cov: 0.01 # ''
-clip_distance: -2. # ''
-colorizer.enable: false # enable colorizer filter
-# Note: When using 'ros2 param dump <name for realsense2_camera_node>' the element 'depth_module' shows more elements
-# than the ones listed below.
-depth_module.color_format: RGB8 # color stream format for d405
-depth_module.color_profile: 0,0,0 # Depth module color stream profile for d405
-depth_module.depth_format: Z16 # depth stream format
-depth_module.depth_profile: 848x480x30 # depth stream profile
-depth_module.enable_auto_exposure: true # enable/disable auto exposure for depth image
-depth_module.exposure: 8500 # Depth module manual exposure value
-depth_module.exposure.1: 7500 # Depth module first exposure value. Used for hdr_merge filter
-depth_module.exposure.2: 1 # Depth module second exposure value. Used for hdr_merge filter
-depth_module.gain: 16 # Depth module manual gain value
-depth_module.gain.1: 16 # Depth module first gain value. Used for hdr_merge filter
-depth_module.gain.2: 16 # Depth module second gain value. Used for hdr_merge filter
-depth_module.hdr_enabled: false # Depth module hdr enablement flag. Used for hdr_merge filter
-depth_module.infra1_format: Y8 # infra1 stream format
-depth_module.infra2_format: Y8 # infra2 stream format
-depth_module.infra_format: RGB8 # infra0 stream format
-depth_module.infra_profile: 0,0,0 # infra streams (0/1/2) profile
-depth_module.inter_cam_sync_mode: 0 # [0-Default, 1-Master, 2-Slave]
-diagnostics_period: 0.0 # Rate of publishing diagnostics. 0=Disabled
-gyro_fps: 0 # ''
-hdr_merge.enable: false # hdr_merge filter enablement flag
-initial_reset: false #
-json_file_path: "" # allows advanced configuration
-linear_accel_cov: 0.01 # ''
-pointcloud.allow_no_texture_points: false # ''
-pointcloud.enable: false #
-pointcloud.ordered_pc: false #
-pointcloud.stream_filter: 2 # texture stream for pointcloud
-pointcloud.stream_index_filter: 0 # texture stream index for pointcloud
-publish_tf: true # [bool] enable/disable publishing static & dynamic TF
-reconnect_timeout: 6. # Timeout(seconds) between consequtive reconnection attempts
-# Note: When using 'ros2 param dump <name for realsense2_camera_node>' the element 'rgb_camera' shows more elements
-# than the ones listed below.
-rgb_camera.color_format: RGB8 # color stream format
-rgb_camera.color_profile: 640x480x30 # color stream profile
-rgb_camera.enable_auto_exposure: true # enable/disable auto exposure for color image
-rosbag_filename: "" # A realsense bagfile to run from as a device
-rosbag_loop: false # Enable loop playback when playing a bagfile
-rotation_filter.rotation: 0.0 # rotation value: 0.0, 90.0, -90.0, 180.0
-tf_publish_rate: 0.0 # [double] rate in Hz for publishing dynamic TF
-unite_imu_method: 0 # [0-None, 1-copy, 2-linear_interpolation]
-wait_for_device_timeout: -1.0 # Timeout for waiting for device to connect (Seconds)
+    # Rest of parameters
+    accel_fps: 0 # ''
+    accelerate_gpu_with_glsl: false # enable GPU acceleration with GLSL. When compiled w ACCELERATE_GPU_WITH_GLSL=ON
+    align_depth.enable: false # enable align depth filter
+    angular_velocity_cov: 0.01 # ''
+    clip_distance: -2. # ''
+    colorizer.enable: false # enable colorizer filter
+    # Note: When using 'ros2 param dump <name for realsense2_camera_node>' the element 'depth_module' shows more elements
+    # than the ones listed below.
+    depth_module.color_format: RGB8 # color stream format for d405
+    depth_module.color_profile: 0,0,0 # Depth module color stream profile for d405
+    depth_module.depth_format: Z16 # depth stream format
+    depth_module.depth_profile: 848x480x30 # depth stream profile
+    depth_module.enable_auto_exposure: true # enable/disable auto exposure for depth image
+    depth_module.exposure: 8500 # Depth module manual exposure value
+    depth_module.exposure.1: 7500 # Depth module first exposure value. Used for hdr_merge filter
+    depth_module.exposure.2: 1 # Depth module second exposure value. Used for hdr_merge filter
+    depth_module.gain: 16 # Depth module manual gain value
+    depth_module.gain.1: 16 # Depth module first gain value. Used for hdr_merge filter
+    depth_module.gain.2: 16 # Depth module second gain value. Used for hdr_merge filter
+    depth_module.hdr_enabled: false # Depth module hdr enablement flag. Used for hdr_merge filter
+    depth_module.infra1_format: Y8 # infra1 stream format
+    depth_module.infra2_format: Y8 # infra2 stream format
+    depth_module.infra_format: RGB8 # infra0 stream format
+    depth_module.infra_profile: 0,0,0 # infra streams (0/1/2) profile
+    depth_module.inter_cam_sync_mode: 0 # [0-Default, 1-Master, 2-Slave]
+    diagnostics_period: 0.0 # Rate of publishing diagnostics. 0=Disabled
+    gyro_fps: 0 # ''
+    hdr_merge.enable: false # hdr_merge filter enablement flag
+    initial_reset: false #
+    json_file_path: "" # allows advanced configuration
+    linear_accel_cov: 0.01 # ''
+    pointcloud.allow_no_texture_points: false # ''
+    pointcloud.enable: false #
+    pointcloud.ordered_pc: false #
+    pointcloud.stream_filter: 2 # texture stream for pointcloud
+    pointcloud.stream_index_filter: 0 # texture stream index for pointcloud
+    publish_tf: true # [bool] enable/disable publishing static & dynamic TF
+    reconnect_timeout: 6. # Timeout(seconds) between consequtive reconnection attempts
+    # Note: When using 'ros2 param dump <name for realsense2_camera_node>' the element 'rgb_camera' shows more elements
+    # than the ones listed below.
+    rgb_camera.color_format: RGB8 # color stream format
+    rgb_camera.color_profile: 640x480x30 # color stream profile
+    rgb_camera.enable_auto_exposure: true # enable/disable auto exposure for color image
+    rosbag_filename: "" # A realsense bagfile to run from as a device
+    rosbag_loop: false # Enable loop playback when playing a bagfile
+    rotation_filter.rotation: 0.0 # rotation value: 0.0, 90.0, -90.0, 180.0
+    tf_publish_rate: 0.0 # [double] rate in Hz for publishing dynamic TF
+    unite_imu_method: 0 # [0-None, 1-copy, 2-linear_interpolation]
+    wait_for_device_timeout: -1.0 # Timeout for waiting for device to connect (Seconds)
