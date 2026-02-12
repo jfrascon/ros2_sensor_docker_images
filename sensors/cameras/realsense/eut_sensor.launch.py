@@ -66,7 +66,7 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
 
     # If the node's name is not set, set a default one.
     if not str(node_options['name']).strip():
-        node_options['name'] = 'realsense_camera_ros2_driver'
+        node_options['name'] = 'realsense_ros2_driver'
 
     # Process logging options, including 'log-level', 'disable-stdout-logs', 'disable-rosout-logs',
     # 'disable-external-lib-logs', and custom logger levels.
