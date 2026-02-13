@@ -122,7 +122,7 @@ Variables con valor por defecto en este ejemplo:
 - `NAMESPACE` (por defecto: vacío)
 - `ROBOT_NAME` (por defecto: `robot`)
 - `ROS_DOMAIN_ID` (por defecto: `11`)
-- `NODE_OPTIONS` (por defecto: `name=realsense_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
+- `NODE_OPTIONS` (por defecto: `name=realsense_camera,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
 - `LOGGING_OPTIONS` (por defecto: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
 
 Las variables `NODE_OPTIONS` y `LOGGING_OPTIONS` son de tipo `kvs` (key-value-string), es decir, un string formado por pares `key=value` separados por comas.

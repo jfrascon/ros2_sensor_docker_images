@@ -32,7 +32,7 @@ print_banner_text() {
 NAMESPACE_DEF=""
 ROBOT_NAME_DEF="robot"
 ROS_DOMAIN_ID_DEF="11"
-NODE_OPTIONS_DEF="name=realsense_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+NODE_OPTIONS_DEF="name=realsense_camera,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
 LOGGING_OPTIONS_DEF="log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
 
 # For ROS2-Humble, and earlier versions of ROS2, 'ROS_LOCALHOST_ONLY=1|0' can be set to limit the discovery to

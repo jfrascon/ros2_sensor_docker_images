@@ -122,7 +122,7 @@ Variables with default values in this example:
 - `NAMESPACE` (default: empty)
 - `ROBOT_NAME` (default: `robot`)
 - `ROS_DOMAIN_ID` (default: `11`)
-- `NODE_OPTIONS` (default: `name=realsense_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
+- `NODE_OPTIONS` (default: `name=realsense_camera,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
 - `LOGGING_OPTIONS` (default: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
 
 `NODE_OPTIONS` and `LOGGING_OPTIONS` are `kvs` (key-value-string) variables, i.e., a string composed of `key=value` pairs separated by commas.
