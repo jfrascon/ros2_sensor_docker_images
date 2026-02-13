@@ -121,16 +121,17 @@ Additional tools are described at:
 Examples are described at:
 [https://github.com/realsenseai/librealsense/tree/master/examples](https://github.com/realsenseai/librealsense/tree/master/examples/readme.md).
 
-If `BUILD_EXAMPLES=ON`, the following binaries are built: `rs-callback`, `rs-color`, `rs-depth`, `rs-distance`, `rs-embedded-filter`, `rs-eth-config`, `rs-infrared`, `rs-hello-realsense`, `rs-on-chip-calib`, and `rs-save-to-disk`.<br/>
-If `BUILD_GRAPHICAL_EXAMPLES=ON`, the following are also built: `realsense-viewer`, `rs-align`, `rs-align-gl`, `rs-align-advanced`, `rs-benchmark`, `rs-capture`, `rs-data-collect`, `rs-depth-quality`, `rs-gl`, `rs-hdr`, `rs-labeled-pointcloud`, `rs-measure`, `rs-motion`, `rs-multicam`, `rs-pointcloud`, `rs-post-processing`, `rs-record-playback`, `rs-rosbag-inspector`, `rs-sensor-control`, and `rs-software-device`.<br/>
-If `BUILD_EXAMPLES=OFF`, none of the binaries above are built (neither graphical nor non-graphical), even if `BUILD_GRAPHICAL_EXAMPLES=ON`.<br/>
-If you only want non-graphical examples, use `BUILD_EXAMPLES=ON` and `BUILD_GRAPHICAL_EXAMPLES=OFF`.<br/>
+If `BUILD_EXAMPLES=ON`, the following binaries are built: `rs-callback`, `rs-color`, `rs-depth`, `rs-distance`, `rs-embedded-filter`, `rs-eth-config`, `rs-infrared`, `rs-hello-realsense`, `rs-on-chip-calib`, and `rs-save-to-disk`.
+<br/><br/>
+If `BUILD_GRAPHICAL_EXAMPLES=ON`, the following are also built: `realsense-viewer`, `rs-align`, `rs-align-gl`, `rs-align-advanced`, `rs-benchmark`, `rs-capture`, `rs-data-collect`, `rs-depth-quality`, `rs-gl`, `rs-hdr`, `rs-labeled-pointcloud`, `rs-measure`, `rs-motion`, `rs-multicam`, `rs-pointcloud`, `rs-post-processing`, `rs-record-playback`, `rs-rosbag-inspector`, `rs-sensor-control`, and `rs-software-device`.<br/><br/>
+If `BUILD_EXAMPLES=OFF`, none of the binaries above are built (neither graphical nor non-graphical), even if `BUILD_GRAPHICAL_EXAMPLES=ON`.<br/><br/>
+If you only want non-graphical examples, use `BUILD_EXAMPLES=ON` and `BUILD_GRAPHICAL_EXAMPLES=OFF`.<br/><br/>
 If you want graphical examples, use `BUILD_EXAMPLES=ON` and `BUILD_GRAPHICAL_EXAMPLES=ON`, which also implies building non-graphical examples.
 
-If `BUILD_TOOLS=ON`, the following binaries are built: `rs-convert`, `rs-enumerate-devices`, `rs-fw-logger`, `rs-terminal`, `rs-record`, `rs-fw-update`, and `rs-embed`.<br/>
-If `BUILD_WITH_DDS=ON`, the following are also built: `rs-dds-adapter`, `rs-dds-config`, and `rs-dds-sniffer`.<br/>
-If `BUILD_TOOLS=OFF`, none of the binaries above are built (neither DDS nor non-DDS), even if `BUILD_WITH_DDS=ON`.<br/>
-If you only want base tools, use `BUILD_TOOLS=ON` and `BUILD_WITH_DDS=OFF`.<br/>
+If `BUILD_TOOLS=ON`, the following binaries are built: `rs-convert`, `rs-enumerate-devices`, `rs-fw-logger`, `rs-terminal`, `rs-record`, `rs-fw-update`, and `rs-embed`.<br/><br/>
+If `BUILD_WITH_DDS=ON`, the following are also built: `rs-dds-adapter`, `rs-dds-config`, and `rs-dds-sniffer`.<br/><br/>
+If `BUILD_TOOLS=OFF`, none of the binaries above are built (neither DDS nor non-DDS), even if `BUILD_WITH_DDS=ON`.<br/><br/>
+If you only want base tools, use `BUILD_TOOLS=ON` and `BUILD_WITH_DDS=OFF`.<br/><br/>
 If you want DDS tools, use `BUILD_TOOLS=ON` and `BUILD_WITH_DDS=ON`, which also implies building the base tools.
 
 ---
