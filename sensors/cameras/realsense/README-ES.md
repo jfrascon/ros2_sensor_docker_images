@@ -142,7 +142,7 @@ Hay variables que no se pueden configurar con `--env` en este flujo:
 - `CYCLONEDDS_URI`: está fijada en `docker_compose_base.yaml`.
 - `PARAMS_FILE`: está fijada en `docker_compose_base.yaml`. Indica la ruta del fichero YAML con los parámetros de la cámara.
 - `IMG_ID`: se toma del argumento posicional `<img_id>` del script. Identifica la imagen Docker que se va a ejecutar.
-- `ENV_FILE`: lo gestiona internamente el propio script. Es el fichero temporal `.env` que `docker compose` carga mediante `env_file` (en `docker_compose_base.yaml`) y que se inyecta en el contenedor del servicio `realsense_srvc`.
+- `ENV_FILE`: lo gestiona internamente el propio script. Es el fichero temporal `.env` que `docker compose` carga mediante `env_file` (en `docker_compose_base.yaml`) para pasar variables de entorno al contenedor del servicio `realsense_srvc`.
 
 La configuración de CycloneDDS usada en el ejemplo se define en el fichero `examples/cyclonedds_config.xml`. El middleware la carga mediante la variable `CYCLONEDDS_URI`, definida en `docker_compose_base.yaml`.
 
