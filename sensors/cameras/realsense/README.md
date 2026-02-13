@@ -140,9 +140,9 @@ There are variables that cannot be configured with `--env` in this flow:
 
 - `RMW_IMPLEMENTATION`: fixed in `docker_compose_base.yaml` as `rmw_cyclonedds_cpp`. This example uses CycloneDDS as DDS middleware. If you want to change middleware, you must edit `docker_compose_base.yaml`.
 - `CYCLONEDDS_URI`: fixed in `docker_compose_base.yaml`.
-- `PARAMS_FILE`: fixed in `docker_compose_base.yaml`.
-- `IMG_ID`: taken from the script positional argument `<img_id>`.
-- `ENV_FILE`: managed internally by the script.
+- `PARAMS_FILE`: fixed in `docker_compose_base.yaml`. It points to the YAML file with camera parameters.
+- `IMG_ID`: taken from the script positional argument `<img_id>`. It identifies the Docker image to run.
+- `ENV_FILE`: managed internally by the script. It is the temporary `.env` file that `docker compose` loads through `env_file` (in `docker_compose_base.yaml`) and injects into the container of service `realsense_srvc`.
 
 CycloneDDS configuration used in this example is defined in `examples/cyclonedds_config.xml`. The middleware loads it through the `CYCLONEDDS_URI` variable, defined in `docker_compose_base.yaml`.
 
