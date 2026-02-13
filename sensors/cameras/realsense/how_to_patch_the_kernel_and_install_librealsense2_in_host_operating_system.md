@@ -1271,9 +1271,9 @@ En el fichero [examples.md](examples.md) tienes condensadas las operaciones que 
 La librería `librealsense2` viene acompañada de herramientas extras y ejemplos que pueden ser de utilidad a los usuarios de las cámaras **RealSense**.
 
 - Las herramientas extras se describen en la URL:
-[https://github.com/realsenseai/librealsense/tree/master/tools](https://github.com/realsenseai/librealsense/blob/master/tools/readme.md).
+[https://github.com/realsenseai/librealsense/tree/master/tools](https://github.com/realsenseai/librealsense/blob/master/tools).
 - Los ejemplos se describen en la URL:
-[https://github.com/realsenseai/librealsense/tree/master/examples](https://github.com/realsenseai/librealsense/tree/master/examples/readme.md).
+[https://github.com/realsenseai/librealsense/tree/master/examples](https://github.com/realsenseai/librealsense/tree/master/examples).
 
 Si `BUILD_EXAMPLES=ON`, se construyen los binarios `rs-callback`, `rs-color`, `rs-depth`, `rs-distance`, `rs-embedded-filter`, `rs-eth-config`, `rs-infrared`, `rs-hello-realsense`, `rs-on-chip-calib` y `rs-save-to-disk`.
 Si además `BUILD_GRAPHICAL_EXAMPLES=ON`, también se generan `realsense-viewer`, `rs-align`, `rs-align-gl`, `rs-align-advanced`, `rs-benchmark`, `rs-capture`, `rs-data-collect`, `rs-depth-quality`, `rs-gl`, `rs-hdr`, `rs-labeled-pointcloud`, `rs-measure`, `rs-motion`, `rs-multicam`, `rs-pointcloud`, `rs-post-processing`, `rs-record-playback`, `rs-rosbag-inspector`, `rs-sensor-control` y `rs-software-device`.
