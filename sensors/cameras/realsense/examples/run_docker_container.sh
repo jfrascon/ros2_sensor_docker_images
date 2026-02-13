@@ -192,6 +192,14 @@ for env_kv in "${env_vars[@]}"; do
         echo "Error: --env RMW_IMPLEMENTATION is not allowed; it is fixed in docker_compose_base.yaml" >&2
         exit 1
         ;;
+    CYCLONEDDS_URI)
+        echo "Error: --env CYCLONEDDS_URI is not allowed; it is fixed in docker_compose_base.yaml" >&2
+        exit 1
+        ;;
+    PARAMS_FILE)
+        echo "Error: --env PARAMS_FILE is not allowed; it is fixed in docker_compose_base.yaml" >&2
+        exit 1
+        ;;
     NODE_OPTIONS)
         NODE_OPTIONS="${env_val}"
         ;;
