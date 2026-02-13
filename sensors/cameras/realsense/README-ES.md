@@ -15,7 +15,7 @@ Además, el fichero [examples.md](examples.md) recopila ejemplos prácticos para
 
 ## Ejemplo de uso
 
-Para ilustrar el uso de los ficheros mencionados anteriormente, se ha creado un ejemplo en la carpeta `examples/`, donde se proporciona un `Dockerfile` para construir una imagen que permite ejecutar el paquete ROS2 de las cámaras RealSense dentro de un contenedor Docker.
+Para ilustrar el uso de los ficheros mencionados anteriormente, se ha creado un ejemplo en la carpeta `examples/`, donde se proporciona un `Dockerfile` para construir una imagen que permite ejecutar los paquetes ROS2 de las cámaras RealSense dentro de un contenedor Docker.
 
 El proceso está pensado para que sea cómodo para el usuario: basta con ejecutar `examples/build.py` e indicar la distro de ROS2 que quiere se usar (`humble` o `jazzy`).
 
@@ -124,6 +124,8 @@ Variables con valor por defecto en este ejemplo:
 - `ROS_DOMAIN_ID` (por defecto: `11`)
 - `NODE_OPTIONS` (por defecto: `name=realsense_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
 - `LOGGING_OPTIONS` (por defecto: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
+
+Las variables `NODE_OPTIONS` y `LOGGING_OPTIONS` son de tipo `kvs` (key-value-string), es decir, un string formado por pares `key=value` separados por comas.
 
 Variables adicionales soportadas por el script:
 
