@@ -118,7 +118,7 @@ En general, el backend nativo del kernel es el camino estándar y suele ser la p
 |---|---|---|
 | Dónde vive la lógica UVC/HID | En el kernel de Linux | En la librería `librealsense2` |
 | Controladores usados | V4L2, IIO y USB del kernel | Implementación propia de RS-USB |
-| Cómo se activa | Por defecto | `-DFORCE_RSUSB_BACKEND` |
+| Cómo se activa | Por defecto | `-DFORCE_RSUSB_BACKEND=ON` |
 | Ventaja principal | Integración estándar con Linux | Independencia de drivers del kernel |
 | Casos típicos | Entornos de producción en Linux | Entornos sin drivers adecuados o con necesidades específicas |
 
@@ -622,30 +622,30 @@ git clone --branch "${LATEST_TAG}" --depth 1 https://github.com/realsenseai/libr
 
 cd "${dst_dir}" && [ -d "build" ] && rm -rf build
 mkdir build && cd build
-# In this example we are going to: disable CUDA support, enable graphical examples, enable tools, and use the native
-# backend, not the RS-USB backend.
+# In this example we are going to: disable CUDA support, enable graphical examples (which require to enable examples
+# too), enable tools, and use the native backend, not the RS-USB backend.
 # For a list of all flags visit the URL https://github.com/realsenseai/librealsense/blob/master/CMake/lrs_options.cmake,
 # and rememeber to choose the branch or tag you require.
 # Alternatively, you can also visit the documentation page about build configuration at URL
 # https://dev.realsenseai.com/docs/build-configuration.
-# The lrs_options.cmake file, included in CMakeLists.txt, already indicates by default:
+# The lrs_options.cmake file, included in CMakeLists.txt, indicates by default the following values for the flags that
+# are relevant for us:
 # option(BUILD_WITH_CUDA "Enable CUDA" OFF)
-# If you set this flag to ON, but CUDA is not available on your system, the librealsense library should fallback to CPU
-# processing since version v2.56.4, when this fallback mechanism was implemented, as indicated in the release notes of
-# that version: https://github.com/realsenseai/librealsense/releases/tag/v2.56.4
-# Anyway, try to be sure that CUDA is available on your system before setting this flag to ON and no issues arise.
+#     If you set this flag to ON, but CUDA is not available on your system, the librealsense library should fallback to
+#     CPU processing since version v2.56.4, when this fallback mechanism was implemented, as indicated in the release
+#     notes of that version: https://github.com/realsenseai/librealsense/releases/tag/v2.56.4
+#     Anyway, try to be sure that CUDA is available on your system before setting this flag to ON and no issues arise.
 # option(BUILD_EXAMPLES "Build examples (not including graphical examples -- see BUILD_GRAPHICAL_EXAMPLES)" ON)
 # option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples (Viewer & DQT) -- Implies BUILD_GLSL_EXTENSIONS" ON)
 # option(BUILD_TOOLS "Build tools (fw-updater, etc.) that are not examples" ON)
 # option(FORCE_RSUSB_BACKEND "Use RS USB backend, mandatory for Win7/MacOS/Android, optional for Linux" OFF)
 # option(FORCE_LIBUVC "Explicitly turn-on libuvc backend - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 # FORCE_RSUSB_BACKEND and FORCE_LIBUVC are meant to force the use of RS-USB backend (user-space UVC and HID).
-# So, strictly speaking, it would only have been necessary to specify the flag -DBUILD_EXAMPLES=OFF, because the rest
-# of the flags already have the desired value by default; but to be explicit and leave no room for doubt, we list all
-# the flags that are relevant to us.
+# The default values already match this setup.
+# We still set these flags explicitly to make the build intent clear and reproducible.
 cmake .. -DCMAKE_BUILD_TYPE=Release \
          -DBUILD_WITH_CUDA=OFF \
-         -DBUILD_EXAMPLES=OFF \
+         -DBUILD_EXAMPLES=ON \
          -DBUILD_GRAPHICAL_EXAMPLES=ON \
          -DBUILD_TOOLS=ON \
          -DFORCE_RSUSB_BACKEND=OFF
@@ -731,19 +731,20 @@ mkdir build && cd build
 # and rememeber to choose the branch or tag you require.
 # Alternatively, you can also visit the documentation page about build configuration at URL
 # https://dev.realsenseai.com/docs/build-configuration.
-
-# Common flags are:
+# The lrs_options.cmake file, included in CMakeLists.txt, indicates by default the following values for the flags that
+# are relevant for us:
 # option(BUILD_WITH_CUDA "Enable CUDA" OFF)
-# If you set this flag to ON, but CUDA is not available on your system, the lirary should fallback to CPU processing.
-# I am sure I have read about this behavior somewhere in issues of the librealsense GitHub repo.
-# Anyway, try to be sure that CUDA is available on your system before setting this flag to ON and no issues arise.
+#     If you set this flag to ON, but CUDA is not available on your system, the librealsense library should fallback to
+#     CPU processing since version v2.56.4, when this fallback mechanism was implemented, as indicated in the release
+#     notes of that version: https://github.com/realsenseai/librealsense/releases/tag/v2.56.4
+#     Anyway, try to be sure that CUDA is available on your system before setting this flag to ON and no issues arise.
 # option(BUILD_EXAMPLES "Build examples (not including graphical examples -- see BUILD_GRAPHICAL_EXAMPLES)" ON)
 # option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples (Viewer & DQT) -- Implies BUILD_GLSL_EXTENSIONS" ON)
 # option(BUILD_TOOLS "Build tools (fw-updater, etc.) that are not examples" ON)
 # option(FORCE_RSUSB_BACKEND "Use RS USB backend, mandatory for Win7/MacOS/Android, optional for Linux" OFF)
 # option(FORCE_LIBUVC "Explicitly turn-on libuvc backend - deprecated, use FORCE_RSUSB_BACKEND instead" OFF)
 # FORCE_RSUSB_BACKEND and FORCE_LIBUVC are meant to force the use of RS-USB backend (user-space UVC and HID).
-# Since we are in the option A, we DO NOT use RS-USB backend here, so we leave this flag to OFF.
+# Since we are in the option A, we DO NOT use the RS-USB backend here, so we leave this flag to OFF.
 # Since we are installing the graphical examples (-DBUILD_GRAPHICAL_EXAMPLES=ON) we need to install graphical libraries:
 # libgtk-3-dev, libglfw3-dev, libgl1-mesa-dev, libglu1-mesa-dev.
 sudo apt-get install -y --no-install-recommends git wget cmake build-essential libssl-dev \
@@ -756,10 +757,8 @@ sudo apt-get install -y --no-install-recommends git wget cmake build-essential l
   libglu1-mesa-dev
 cmake .. -DCMAKE_BUILD_TYPE=Release \
          -DBUILD_WITH_CUDA=OFF \
-         -DBUILD_EXAMPLES=OFF \
+         -DBUILD_EXAMPLES=ON \
          -DBUILD_GRAPHICAL_EXAMPLES=ON \
-         -DBUILD_CV_EXAMPLES=OFF \
-         -DBUILD_PCL_EXAMPLES=OFF \
          -DBUILD_TOOLS=ON \
          -DFORCE_RSUSB_BACKEND=OFF
 sudo make uninstall && make clean && make && sudo make -j$(($(nproc)-1)) install
@@ -1147,10 +1146,8 @@ cd "${dst_dir}" && [ -d build ] && rm -rf build
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_WITH_CUDA=OFF \
-  -DBUILD_EXAMPLES=OFF \
+  -DBUILD_EXAMPLES=ON \
   -DBUILD_GRAPHICAL_EXAMPLES=ON \
-  -DBUILD_CV_EXAMPLES=OFF \
-  -DBUILD_PCL_EXAMPLES=OFF \
   -DBUILD_TOOLS=ON \
   -DFORCE_RSUSB_BACKEND=OFF
 
@@ -1244,10 +1241,8 @@ cd "${dst_dir}" && [ -d build ] && rm -rf build
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_WITH_CUDA=OFF \
-  -DBUILD_EXAMPLES=OFF \
+  -DBUILD_EXAMPLES=ON \
   -DBUILD_GRAPHICAL_EXAMPLES=ON \
-  -DBUILD_CV_EXAMPLES=OFF \
-  -DBUILD_PCL_EXAMPLES=OFF \
   -DBUILD_TOOLS=ON \
   -DFORCE_RSUSB_BACKEND=ON
 
@@ -1264,7 +1259,7 @@ Por ejemplo:<br/>
 URL errónea: [https://dev.intelrealsense.com/docs/build-configuration](https://dev.intelrealsense.com/docs/build-configuration)<br/>
 URL correcta: [https://dev.realsenseai.com/docs/build-configuration](https://dev.realsenseai.com/docs/build-configuration)<br/>
 
-Finalmente, indicarte que en la URL [https://support.realsenseai.com/hc/en-us/community/posts/](https://support.realsenseai.com/hc/en-us/community/posts/) puedes encontrar una **FAQ** muy útil, con preguntas y respuestas sobre la librería `librealsense2` y sobre las cámaras RealSense en general.
+En la URL [https://support.realsenseai.com/hc/en-us/community/posts/](https://support.realsenseai.com/hc/en-us/community/posts/) puedes encontrar una página de **FAQ**, sobre la librería `librealsense2` y las cámaras RealSense.
 
 En el fichero [examples.md](examples.md) tienes condensadas las operaciones que te he ido describiendo más arriba, pero en formato de comandos de terminal, para que puedas copiarlos y pegarlos directamente en tu terminal:
 
@@ -1272,6 +1267,25 @@ En el fichero [examples.md](examples.md) tienes condensadas las operaciones que 
 - Desinstalar las reglas udev en el sistema operativo host para dejar de comunicarte con las cámaras RealSense.
 - Parchear los módulos del kernel en el sistema operativo host para mejorar el soporte de las cámaras RealSense.
 - Instalar la librería librealsense2 en el sistema operativo host.
+
+La librería `librealsense2` viene acompañada de herramientas extras y ejemplos que pueden ser de utilidad a los usuarios de las cámaras **RealSense**.
+
+- Las herramientas extras se describen en la URL:
+[https://github.com/realsenseai/librealsense/tree/master/tools](https://github.com/realsenseai/librealsense/blob/master/tools/readme.md).
+- Los ejemplos se describen en la URL:
+[https://github.com/realsenseai/librealsense/tree/master/examples](https://github.com/realsenseai/librealsense/tree/master/examples/readme.md).
+
+Si `BUILD_EXAMPLES=ON`, se construyen los binarios `rs-callback`, `rs-color`, `rs-depth`, `rs-distance`, `rs-embedded-filter`, `rs-eth-config`, `rs-infrared`, `rs-hello-realsense`, `rs-on-chip-calib` y `rs-save-to-disk`.
+Si además `BUILD_GRAPHICAL_EXAMPLES=ON`, también se generan `realsense-viewer`, `rs-align`, `rs-align-gl`, `rs-align-advanced`, `rs-benchmark`, `rs-capture`, `rs-data-collect`, `rs-depth-quality`, `rs-gl`, `rs-hdr`, `rs-labeled-pointcloud`, `rs-measure`, `rs-motion`, `rs-multicam`, `rs-pointcloud`, `rs-post-processing`, `rs-record-playback`, `rs-rosbag-inspector`, `rs-sensor-control` y `rs-software-device`.
+Si `BUILD_EXAMPLES=OFF`, no se construye ninguno de los binarios anteriores, ni los gráficos ni los no gráficos, aunque `BUILD_GRAPHICAL_EXAMPLES` esté a `ON`.
+Si sólo quieres los ejemplos no gráficos, usa `BUILD_EXAMPLES=ON` y `BUILD_GRAPHICAL_EXAMPLES=OFF`.
+Si quieres los ejemplos gráficos, usa `BUILD_EXAMPLES=ON` y `BUILD_GRAPHICAL_EXAMPLES=ON`, lo que implica que también tendrás los ejemplos no gráficos.
+
+Si `BUILD_TOOLS=ON`, se construyen los binarios `rs-convert`, `rs-enumerate-devices`, `rs-fw-logger`, `rs-terminal`, `rs-record`, `rs-fw-update` y `rs-embed`.
+Si además `BUILD_WITH_DDS=ON`, también se generan `rs-dds-adapter`, `rs-dds-config` y `rs-dds-sniffer`.
+Si `BUILD_TOOLS=OFF`, no se construye ninguno de los binarios anteriores, ni los DDS ni los no-DDS, aunque `BUILD_WITH_DDS` esté a `ON`.
+Si sólo quieres las herramientas base, usa `BUILD_TOOLS=ON` y `BUILD_WITH_DDS=OFF`.
+Si quieres las herramientas DDS, usa `BUILD_TOOLS=ON` y `BUILD_WITH_DDS=ON`, lo que implica que también tendrás las herramientas base.
 
 Bueno, este es el final de la guía, espero que te haya sido de utilidad. Si tienes cualquier duda o pregunta, no dudes en contactarme.
 
