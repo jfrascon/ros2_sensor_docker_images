@@ -110,7 +110,7 @@ Si prefieres modo manual:
 cd sensors/cameras/realsense/examples
 ./run_docker_container.sh realsense:humble manual
 docker compose exec -it realsense_srvc bash
-bash /tmp/run_realsense_launch_in_terminal.sh
+bash /tmp/run_launch_in_terminal.sh
 ```
 
 Este ejemplo también está preparado para ejecutar aplicaciones gráficas desde el contenedor (por ejemplo `rviz2` y `realsense-viewer`) y mostrarlas en el host mediante X11/XWayland. Ten en cuenta que `realsense-viewer` sólo estará disponible si `librealsense2` se compiló con `BUILD_EXAMPLES=ON` y `BUILD_GRAPHICAL_EXAMPLES=ON`.

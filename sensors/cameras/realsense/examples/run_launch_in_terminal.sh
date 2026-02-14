@@ -9,4 +9,4 @@
 
 . ${IMAGE_MAIN_USER_WORKSPACE}/install/setup.bash
 
-bash /tmp/run_realsense_launch.sh
+bash /tmp/run_launch.sh

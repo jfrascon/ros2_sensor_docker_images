@@ -20,7 +20,7 @@ services:
       # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
       - ./realsense_params.yaml:/tmp/params.yaml:ro
-      - ./run_realsense_launch.sh:/tmp/run_realsense_launch.sh:ro
+      - ./run_launch.sh:/tmp/run_launch.sh:ro
       - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     device_cgroup_rules:
       - "c 81:* rwm" # 81 is video4linux
