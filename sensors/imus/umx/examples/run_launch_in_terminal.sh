@@ -9,4 +9,4 @@
 
 . ${IMAGE_MAIN_USER_WORKSPACE}/install/setup.bash
 
-bash /tmp/exec_launch_file.sh
+bash /tmp/run_launch.sh

@@ -55,4 +55,28 @@ if ! grep -q '\$(var robot_prefix)' "${params_file}"; then
         "frame_id values will not be prefixed with ROBOT_NAME" >&2
 fi
 
-ros2 launch umx_driver eut_sensor.launch.py namespace:=${namespace} robot_name:=${robot_name} um_model:=${um_model} params_file:=${params_file} topic_remappings:="${topic_remappings}" node_options:="${node_options}" logging_options:="${logging_options}"
+# Build launch arguments dynamically to avoid passing empty values that can break ros2 launch parsing.
+# robot_name, um_model and params_file are required, so they are always included. The rest are optional and only
+# included if not empty.
+launch_args=(
+    "robot_name:=${robot_name}"
+    "um_model:=${um_model}"
+    "params_file:=${params_file}"
+)
+
+[ -n "${namespace}" ] && launch_args+=("namespace:=${namespace}")
+[ -n "${topic_remappings}" ] && launch_args+=("topic_remappings:=${topic_remappings}")
+[ -n "${node_options}" ] && launch_args+=("node_options:=${node_options}")
+[ -n "${logging_options}" ] && launch_args+=("logging_options:=${logging_options}")
+
+if [ -z "${RMW_IMPLEMENTATION:-}" ]; then
+    echo "ERROR: RMW_IMPLEMENTATION is not set or empty" >&2
+    exit 1
+fi
+
+if [ -z "${ROS_DOMAIN_ID:-}" ]; then
+    echo "ERROR: ROS_DOMAIN_ID is not set or empty" >&2
+    exit 1
+fi
+
+ros2 launch umx_bringup eut_sensor.launch.py "${launch_args[@]}"

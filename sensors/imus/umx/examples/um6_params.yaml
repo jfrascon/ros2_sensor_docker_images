@@ -1,7 +1,7 @@
 # Attention should be paid to the node's name.
 # Check whether the name of the node is the default one or custom (See NODE_OPTIONS environment variable in
 # docker-compose file).
-/**/umx_ros2_driver:
+/**:
   ros__parameters:
     port: /dev/ttyUSB0
     baud: 115200

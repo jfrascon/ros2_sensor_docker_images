@@ -1,44 +1,116 @@
-# umx_driver: um6 / um7
+# UMX ROS2 in Docker
 
-ROS driver for the CH Robotics UM6 and UM7 inertial measurement units (IMU).
-Supports standard data and mag topics as well as providing temperature and rpy outputs.
+The `umx` folder contains the files required to install the ROS2 packages for CH Robotics UM6/UM7 IMUs, together with their dependencies, in a Docker image.
+Both the ROS2 packages and the serial dependency are installed from source code by cloning their official repositories.
 
-See the ROS wiki for details on hardware installation and ROS 1 software implementation:  http://wiki.ros.org/um7
+Official repositories:
+- UM7/UM6 ROS2 packages: `https://github.com/ros-drivers/um7/tree/ros2`
+- serial-ros2 library: `https://github.com/RoverRobotics-forks/serial-ros2`
 
-This driver is built on an updated version of the [original serial library](https://github.com/wjwwood/serial) that has been [updated for ROS 2](https://github.com/RoverRobotics-forks/serial-ros2).
+The `setup.sh`, `compile.sh`, and `eut_sensor.launch.py` scripts are designed to be used from a `Dockerfile` and automate image building.
 
-This driver is the one used by **Clearpath Robotics** in their platforms. See [here](https://docs.clearpathrobotics.com/docs_robots/accessories/sensors/imu/redshift_labs_um7/).
+## Usage example
 
-## Docker Integration
+To illustrate how to use the files mentioned above, an example is provided in the `examples/` folder, where a `Dockerfile` is included to build an image that allows running the ROS2 packages for UM6/UM7 IMUs inside a Docker container.
 
-The main objective of this folder is to provide a robust and reproducible mechanism to install the UM7/UM6 ROS2 driver inside a Docker image. This approach encapsulates the execution environment, eliminating dependency conflicts and facilitating deployment on any host system.
+The process is designed to be convenient for the user: run `examples/build.py` and indicate the ROS2 distro you want to use (`humble` or `jazzy`).
 
-### Build Components
+Example:
+```bash
+cd sensors/imus/umx/examples
+./build.py jazzy
+```
 
-To orchestrate the image creation, three essential files are provided to modularize the process:
+The script includes optional flags that may be useful (for example, cache control, base image pull, metadata, or image name). To see them:
+```bash
+./build.py -h
+```
 
-*   **`install.sh`**: Manages the installation of the **serial-ros2** library, the **um7** driver, and other system dependencies required for the proper functioning of the driver.
-*   **`compile.sh`**: Executes the compilation of the ROS2 workspace (*colcon build*), generating the driver binaries inside the container.
-*   **`eut_sensor.launch.py`**: A *launch file* designed to be embedded in the image, which standardizes node execution and dynamic parameter configuration.
+In `examples/`, the file `refs.txt` defines the remote references (tags/branches) cloned for:
+- `serial-ros2`
+- `um7`
+- `ros2_launch_helpers`
 
-To fully understand the build process, we primarily recommend reading the **Dockerfile** from the multi-sensor example located at the project root. This example illustrates how to create a Docker image for multiple sensors by reusing the `install`, `compile`, and `eut_sensor.launch.py` files associated with each sensor in this project.
+Expected format:
+```txt
+serial-ros2 master
+um7 ros2
+ros2_launch_helpers main
+```
 
-The **Dockerfile** in the `examples/` folder is also recommended reading. It serves as a standalone reference for building an image dedicated solely to this sensor, suitable for testing or specific single-sensor deployments.
+Once the image is built with `examples/build.py`, you can start the container in two modes using `examples/run_docker_container.sh`:
 
-#### Note on Repository Forks and Patches
+- `automatic` mode: the container starts and automatically runs the ROS2 driver launch.
+- `manual` mode: the container starts without launching the driver, so you can enter a shell and run it manually.
 
-This project utilizes a forked version of the serial library (`serial-ros2`) to ensure compatibility with ROS2. Additionally, the official `um7` driver repository is patched during installation to facilitate the inclusion of the custom launch file and ensure proper build configuration.
+Example (if you built with `./build.py jazzy`, the default `img_id` is `umx:jazzy`):
 
-For specific details on the repositories used and the patching process, please consult the comments within the `install.sh` script.
+```bash
+cd sensors/imus/umx/examples
+./run_docker_container.sh umx:jazzy automatic --um-model 7
+```
 
-### Deployment Examples
+If you prefer manual mode:
 
-In the `examples/` folder, you will find the necessary resources to build an example image and deploy the driver. Configurations are included for:
-1.  Running the UM7 or UM6 IMU sensor.
+```bash
+cd sensors/imus/umx/examples
+./run_docker_container.sh umx:jazzy manual --um-model 7
+docker compose exec -it um_srvc bash
+bash /tmp/run_launch_in_terminal.sh
+```
 
-For detailed instructions on building and running, please refer to the `README.md` located inside the `examples` folder.
+This example is also prepared to run graphical applications from the container and display them on the host through X11/XWayland.
 
-## Reference
+The `run_docker_container.sh` script allows configuring variables through `--env KEY=VALUE`.
 
-For more information on sensor configuration and the driver project, please refer to the official GitHub repository:
-https://github.com/ros-drivers/um7/tree/ros2
+Variables with default values in this example:
+
+- `NAMESPACE` (default: empty)
+- `ROBOT_NAME` (default: `robot`)
+- `ROS_DOMAIN_ID` (default: `11`)
+- `NODE_OPTIONS` (default: `name=umx,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
+- `LOGGING_OPTIONS` (default: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
+
+`NODE_OPTIONS` and `LOGGING_OPTIONS` are `kvs` (key-value-string) variables, i.e., a string composed of `key=value` pairs separated by commas.
+
+Additional variables supported by the script:
+
+- `TOPIC_REMAPPINGS`: remapping string in `OLD:=NEW` format, with comma-separated pairs.
+- `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble and earlier, no default value)
+- `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy and later, no default value)
+- `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy and later, no default value)
+
+In this example, if you do not use `TOPIC_REMAPPINGS`, topic names include the node name. For clearer topic hierarchies, use a node name that represents the physical device (for example `front_imu`, `rear_imu`) instead of implementation-oriented suffixes.
+
+There are variables that cannot be configured with `--env` in this flow:
+
+- `RMW_IMPLEMENTATION`: fixed in `examples/docker_compose_base.yaml` as `rmw_cyclonedds_cpp`.
+- `CYCLONEDDS_URI`: fixed in `examples/docker_compose_base.yaml`.
+- `PARAMS_FILE`: selected from `--um-model` and fixed in `examples/docker_compose_base.yaml` as `/tmp/params.yaml`.
+- `IMG_ID`: taken from the script positional argument `<img_id>`.
+- `ENV_FILE`: managed internally by the script. It is the temporary `.env` file that `docker compose` loads through `env_file` (in `examples/docker_compose_base.yaml`) to pass environment variables to the container of service `um_srvc`.
+
+CycloneDDS configuration used in this example is defined in `examples/cyclonedds_config.xml`.
+
+UM model parameter configuration is defined in:
+- `examples/um6_params.yaml`
+- `examples/um7_params.yaml`
+
+Example execution with overrides:
+
+```bash
+./run_docker_container.sh umx:jazzy automatic --um-model 6 \
+  --env ROBOT_NAME=imu_front \
+  --env ROS_DOMAIN_ID=21 \
+  --env ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+```
+
+To see all available options:
+
+```bash
+./run_docker_container.sh -h
+```
+
+For more information on sensor configuration and the driver project:
+- https://github.com/ros-drivers/um7/tree/ros2
+- https://github.com/RoverRobotics-forks/serial-ros2

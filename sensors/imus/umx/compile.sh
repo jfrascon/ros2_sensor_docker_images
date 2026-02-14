@@ -1,39 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
+log() { printf '[%s] %s\n' "$(date -u +'%Y-%m-%d_%H-%M-%S')" "$*"; }
 
 usage() {
     cat <<EOF
 Usage:
-  $(basename ${BASH_SOURCE[0]}) PKGS_DIR [--symlink-install --help]
+  $(basename "${BASH_SOURCE[0]}") PKGS_DIR [--symlink-install] [--help|-h]
 
 Positional arguments:
   PKGS_DIR  Directory where the ROS packages are located
 
 Options:
   --symlink-install    Build packages with symlink install
-   --help              Show this help message and exit
+  -h, --help           Show this help message and exit
 EOF
 }
 
-# Normalize arguments with GNU getopt.
-# -o ''     -> no short options
-# -l ...    -> long options; ":" -> option requires a value
-# --        -> end of getopt's own flags; after this, pass script args to parse
-# "$@"      -> forward all original args verbatim (keeps spaces/quotes)
-# getopt    -> normalizes: reorders options first, splits values, appends a final "--"
-# on error  -> exits non-zero; we show usage and exit 2
-PARSED=$(getopt \
-    -o '' \
-    -l symlink-install,help \
-    -- "$@") || {
+SHORT_OPTS="h"
+LONG_OPTS="help,symlink-install"
+PARSED_ARGS="$(getopt --options "${SHORT_OPTS}" --longoptions "${LONG_OPTS}" --name "$0" -- "$@")" || {
     usage
-    exit 1
+    exit 2
 }
 
-# Replace $@ with the normalized list; eval preserves quoting from getopt’s output.
-eval set -- "$PARSED"
+# Replace $@ with the normalized list; eval preserves quoting from getopt's output.
+eval set -- "${PARSED_ARGS}"
 
 # After eval set -- ... we get:
 # --symlink-install -- PKGS_DIR
@@ -47,7 +39,7 @@ while true; do
         colcon_flags+=(--symlink-install)
         shift 1
         ;;
-    --help)
+    -h | --help)
         usage
         exit 0
         ;;
@@ -56,6 +48,7 @@ while true; do
         break
         ;;
     *)
+        log "ERROR: Unexpected option: ${1}" >&2
         usage
         exit 2
         ;;
@@ -71,7 +64,7 @@ colcon_flags+=(
 )
 
 [ "$#" -lt 1 ] && {
-    log "Error: missing required positionals: PKGS_DIR" >&2
+    log "ERROR: missing required positionals: PKGS_DIR" >&2
     usage
     exit 1
 }
@@ -79,23 +72,29 @@ colcon_flags+=(
 PKGS_DIR="${1}"
 shift
 
-[ -z "${PKGS_DIR}" ] && {
-    log "Error: PKGS_DIR is empty" >&2
-    exit 1
-}
+if [ "$#" -ne 0 ]; then
+    log "ERROR: Unexpected positional arguments: $*" >&2
+    usage
+    exit 2
+fi
 
-[ ! -d "${PKGS_DIR}" ] && {
-    log "Error: PKGS_DIR '${PKGS_DIR}' does not exist or is not a directory" >&2
+if [ -z "${PKGS_DIR}" ]; then
+    log "ERROR: PKGS_DIR is empty" >&2
     exit 1
-}
+fi
+
+if [ ! -d "${PKGS_DIR}" ]; then
+    log "ERROR: PKGS_DIR '${PKGS_DIR}' does not exist or is not a directory" >&2
+    exit 1
+fi
 
 # ------------------------------------------------------------------------------
 # Compiling ROS2 packages
 # ------------------------------------------------------------------------------
 
 cd "$(dirname "${PKGS_DIR}")" # Go to parent of PKGS_DIR
-log "Compiling the packages 'serial' and 'umx_driver'"
-colcon build --packages-skip-build-finished --packages-select serial umx_driver "${colcon_flags[@]}"
+log "Compiling the packages 'serial', 'umx_driver' and 'umx_bringup'"
+colcon build --packages-skip-build-finished --packages-select serial umx_driver umx_bringup "${colcon_flags[@]}"
 
 # ------------------------------------------------------------------------------
 # Compiling the 'ros2_launch_helpers' package

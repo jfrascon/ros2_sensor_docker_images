@@ -171,8 +171,8 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f'Error copying {file} to {tmp_context_dir}: {e}')
 
-    shutil.copy2(umx_dir.joinpath('install.sh'), tmp_context_dir.joinpath('install.sh'))
-    shutil.copytree(umx_dir.joinpath('extras'), tmp_context_dir.joinpath('extras'))
+    shutil.copy2(umx_dir.joinpath('setup.sh'), tmp_context_dir.joinpath('setup.sh'))
+    shutil.copy2(examples_dir.joinpath('refs.txt'), tmp_context_dir.joinpath('refs.txt'))
     shutil.copy2(umx_dir.joinpath('compile.sh'), tmp_context_dir.joinpath('compile.sh'))
     shutil.copy2(umx_dir.joinpath('eut_sensor.launch.py'), tmp_context_dir.joinpath('eut_sensor.launch.py'))
 

@@ -36,35 +36,51 @@ def generate_launch_description() -> LaunchDescription:
 
 
 def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
+    # Get robot name from key 'robot_name' in the launch context.
     robot_name = LaunchConfiguration('robot_name').perform(ctx)
+
+    # Create the robot namespace (robot_ns) by combining the values of the keys 'namespace' and 'robot_name' in the
+    # launch context.
+    # robot_ns has the form '/<namespace>/<robot_name>' or '/<robot_name>' if '<namespace>' is empty or '/'.
     robot_ns = rlh.create_robot_namespace(LaunchConfiguration('namespace').perform(ctx), robot_name)
+
+    # Create the robot_prefix by adding an underscore at the end of the robot name, if it does not already end with an
+    # underscore.
     robot_prefix = rlh.create_robot_prefix(robot_name)
 
+    # Process node options, including 'name', 'output', 'emulate_tty', 'respawn', 'respawn_delay'.
     node_options = rlh.process_node_options(LaunchConfiguration('node_options').perform(ctx))
 
     # If the node's name is not set, set a default one.
     if not str(node_options['name']).strip():
-        node_options['name'] = 'umx_ros2_driver'
+        node_options['name'] = 'umx'
 
+    # Process logging options, including 'log-level', 'disable-stdout-logs', 'disable-rosout-logs',
+    # 'disable-external-lib-logs', and custom logger levels.
     logging_options = rlh.process_logging_options(LaunchConfiguration('logging_options').perform(ctx))
 
+    # ros_arguments is the list of arguments to pass to the node, it is initialized with the logging options, since they
+    # are also passed as ROS arguments.
     ros_arguments = logging_options
 
-    # topic_remappings is optional and if it appears, it is a key-value string (kvs), like
+    # The key 'topic_remappings' is associated by default to an empty string.
+    # If a value is passed for the key 'topic_remappings', it should be a string with the form of key-value pairs, like:
     # "/from_topic1:=/to_topic1,/from_topic2:=/to_topic2"
-    # 'remapppings' is a list of (from, to) tuples.
+    # The function 'process_topic_remappings' processes the string and returns a list of tuples of the form:
+    # [(from1, to1), (from2, to2), ...]
     topic_remappings = rlh.process_topic_remappings(LaunchConfiguration('topic_remappings').perform(ctx))
 
     # The DeclareLaunchArgument for 'um_model' restricts the possible values to the allowed ones: '6', '7'.
     # The value of the um_model is used to select the correct executable for the node.
     um_model = LaunchConfiguration('um_model').perform(ctx)
 
+    # parameters is a list of parameters to pass Node. It can contain ParameterFile and/or dictionaries with parameters.
     parameters = []
     params_file = LaunchConfiguration('params_file').perform(ctx).strip()
 
-    # Add parameter file only if it's not empty.
+    # Add parameter file to parameters list only if it's not empty.
     if params_file:
-        # Allow substitutions in the parameter file, since there is a field called 'frame_id' that migh use
+        # Allow substitutions in the parameter file, since there is a field called 'frame_id' that might use
         # a placeholder for 'robot_prefix'.
         parameters.append(ParameterFile(params_file, allow_substs=True))
 
@@ -73,6 +89,8 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     # if the user provides a parameter file with 'use_sim_time' set to True, it will be overridden to False here.
     parameters.append({'use_sim_time': False})
 
+    # ldes is the list of LaunchDescriptionEntity to return in this OpaqueFunction.
+    # LogInfo actions are added first to the list, so that the log messages are printed before the node is launched.
     ldes: list[LaunchDescriptionEntity] = [
         LogInfo(msg=[f'robot_ns: {robot_ns}']),
         LogInfo(msg=[f'robot_prefix: {robot_prefix}']),
@@ -90,8 +108,8 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     ldes.extend(
         [
             LogInfo(msg=[f'ROS arguments: {" ".join(ros_arguments)}']),
-            # In case the parameter file uses the placeholder 'robot_prefix' (for the 'frame_id') the key
-            # 'robot_prefix' must be set in the context before adding the node that uses the parameter file.
+            # In case the parameter file uses the placeholder 'robot_prefix' (for the 'frame_id') the key 'robot_prefix'
+            # must be set in the context before adding the node that uses the parameter file.
             SetLaunchConfiguration('robot_prefix', robot_prefix),
             Node(
                 package='umx_driver',
