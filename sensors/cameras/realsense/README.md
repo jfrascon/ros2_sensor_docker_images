@@ -144,6 +144,8 @@ Example:
 
 With this example, the full new topic name is `/test/myrobot/realsense_camera/color/ci`.
 
+Since by default (if you do not use `TOPIC_REMAPPINGS`) topics are private and therefore include the node name, it is recommended to use the device/camera name as node name (for example `front_camera`, `rear_camera`, etc.) and avoid suffixes such as `_node`, because that suffix will also appear in topic names. In the topic hierarchy, it usually adds more value to identify the device that produces the information than the technical name of the node running it; the idea is that the topic name should describe the physical origin of the data (the camera), not an implementation detail (the node). And if you use `TOPIC_REMAPPINGS`, apply the same rule.
+
 There are variables that cannot be configured with `--env` in this flow:
 
 - `RMW_IMPLEMENTATION`: fixed in `docker_compose_base.yaml` as `rmw_cyclonedds_cpp`. This example uses CycloneDDS as DDS middleware. If you want to change middleware, you must edit `docker_compose_base.yaml`.

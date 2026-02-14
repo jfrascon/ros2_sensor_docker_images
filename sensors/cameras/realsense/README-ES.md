@@ -144,6 +144,8 @@ Ejemplo:
 
 Con ese ejemplo, el nuevo nombre completo del tópico es `/test/myrobot/realsense_camera/color/ci`.
 
+Dado que por defecto (si no usas `TOPIC_REMAPPINGS`) los tópicos son privados y por tanto incluyen el nombre del nodo, lo recomendable es usar como nombre de nodo el nombre del dispositivo/cámara (por ejemplo `front_camera`, `rear_camera`, etc.) y evitar sufijos como `_node`, ya que ese sufijo aparecerá también en los nombres de los tópicos. En la jerarquía de tópicos, suele aportar más valor identificar el dispositivo que produce la información que el nombre técnico del nodo que lo ejecuta; la idea es que el nombre del tópico describa el origen físico del dato (la cámara), no el detalle de implementación (el nodo). Y si usas `TOPIC_REMAPPINGS`, aplica la misma regla.
+
 Hay variables que no se pueden configurar con `--env` en este flujo:
 
 - `RMW_IMPLEMENTATION`: está fijada en `docker_compose_base.yaml` con `rmw_cyclonedds_cpp`. Este ejemplo usa CycloneDDS como middleware DDS. Si quieres cambiar de middleware, debes editar `docker_compose_base.yaml`.
