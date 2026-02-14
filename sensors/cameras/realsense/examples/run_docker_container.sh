@@ -32,6 +32,13 @@ print_banner_text() {
 NAMESPACE_DEF=""
 ROBOT_NAME_DEF="robot"
 ROS_DOMAIN_ID_DEF="11"
+# The default node name intentionally avoids the '_node' suffix because, by default, many RealSense topics are private
+# (~) and inherit the node name in their final path. Using 'realsense_camera' keeps topic names focused on the device
+# instead of exposing implementation-oriented naming in the topic hierarchy.
+# It's better to have
+# /myns/myrobot/realsense_camera/color/image_raw
+# than
+# /myns/myrobot/realsense_camera_node/color/image_raw
 NODE_OPTIONS_DEF="name=realsense_camera,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
 LOGGING_OPTIONS_DEF="log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
 
