@@ -15,8 +15,24 @@
     serial_no: "" # choose device by serial number
     device_type: "" # choose device by type
     usb_port_id: "" # choose device by usb port id
-    camera_name: camera # camera unique name
-    base_frame_id: link # Root frame of the sensors transform tree
+    camera_name: $(var robot_prefix)realsense_camera # camera unique name
+    # 'base_frame_id' is ONLY a suffix added to camera_name field to form the frame_id (we can call ir camera_frame
+    # here) that is the parent of the child frames:
+    # - <camera_name>_color_frame (parent of <camera_name>_color_optical_frame)
+    # - <camera_name>_depth_frame (parent of <camera_name>_depth_optical_frame)
+    # In a tree form:
+    #   <camera_name>_<base_frame_id>               (<robot_prefix>xxxxxx_link)
+    #   ├── <camera_name>_color_frame               (robot_prefix>xxxxxx_color_frame)
+    #   │   └── <camera_name>_color_optical_frame   (robot_prefix>xxxxxx_color_optical_frame)
+    #   └── <camera_name>_depth_frame               (robot_prefix>xxxxxx_depth_frame)
+    #       └── <camera_name>_depth_optical_frame   (robot_prefix>xxxxxx_depth_optical_frame)
+    # You can verify the previous statements by running 'ros2 topic echo /tf_static' after launching the
+    # node for the camera and checking the fields 'frame_id' and 'child_frame_id' for the tf messages related to the
+    # camera.
+    # According to the URDF file describing the realsense cameras, base_frame_id must be 'link'.
+    # Therefore, it is very likely that you will not have any reason to change the value of 'base_frame_id' from its
+    # default value 'link'.
+    base_frame_id: link
 
     # Enable/diable streams
     enable_accel: false # 'enable accel stream'
