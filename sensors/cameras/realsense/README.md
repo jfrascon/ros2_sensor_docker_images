@@ -132,9 +132,17 @@ Additional variables supported by the script:
 - `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble and earlier, no default value)
 - `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy and later, no default value)
 - `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy and later, no default value)
-- `TODO`: add documentation for `TOPIC_REMAPPINGS` once validation tests are completed.
+- `TOPIC_REMAPPINGS`: remapping string in `OLD:=NEW` format, with comma-separated pairs.
 
-Additionally, you can pass other extra variables with `--env`; the script forwards them to the container.
+In this example, topics defined by the node in source code are private (they use `~`). Therefore, if you want to remap one of those topics, you must use the full path on the left-hand side. On the right-hand side, using `~` is optional:
+
+`<NAMESPACE>/<ROBOT_NAME>/<NODE_NAME>/<OLD_TOPIC>:=~/<NEW_TOPIC>`
+
+Example:
+
+`--env NAMESPACE=test --env ROBOT_NAME=myrobot --env NODE_OPTIONS="name=realsense_camera" --env TOPIC_REMAPPINGS="/test/myrobot/realsense_camera/color/camera_info:=~/color/ci"`
+
+With this example, the full new topic name is `/test/myrobot/realsense_camera/color/ci`.
 
 There are variables that cannot be configured with `--env` in this flow:
 
