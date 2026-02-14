@@ -144,7 +144,13 @@ Ejemplo:
 
 Con ese ejemplo, el nuevo nombre completo del tópico es `/test/myrobot/realsense_camera/color/ci`.
 
-Dado que por defecto (si no usas `TOPIC_REMAPPINGS`) los tópicos son privados y por tanto incluyen el nombre del nodo, lo recomendable es usar como nombre de nodo el nombre del dispositivo/cámara (por ejemplo `front_camera`, `rear_camera`, etc.) y evitar sufijos como `_node`, ya que ese sufijo aparecerá también en los nombres de los tópicos. En la jerarquía de tópicos, suele aportar más valor identificar el dispositivo que produce la información que el nombre técnico del nodo que lo ejecuta; la idea es que el nombre del tópico describa el origen físico del dato (la cámara), no el detalle de implementación (el nodo). Y si usas `TOPIC_REMAPPINGS`, aplica la misma regla.
+Dado que por defecto (si no usas `TOPIC_REMAPPINGS`) los tópicos son privados y por tanto incluyen el nombre del nodo, lo recomendable, en este caso, es usar como nombre de nodo el nombre del dispositivo/cámara (por ejemplo `front_camera`, `rear_camera`, etc.) y evitar sufijos como `_node`, ya que ese sufijo aparecerá también en los nombres de los tópicos. Recuerda que el nombre del nodo se define en `NODE_OPTIONS`, con la clave `name`. En la jerarquía de tópicos, suele aportar más valor identificar el dispositivo que produce la información que el nombre técnico del nodo que lo ejecuta; la idea es que el nombre del tópico describa el origen físico del dato (la cámara), no el detalle de implementación (el nodo).
+
+Si usas `TOPIC_REMAPPINGS`, puedes usar como nombre de nodo el que consideres oportuno, incluso con sufijo `_node` (por ejemplo `front_camera_node`), siempre que en el remapeo apliques la regla anterior y expongas tópicos con nombres centrados en la cámara/dispositivo.
+
+Ejemplo:
+
+`--env NAMESPACE=test --env ROBOT_NAME=myrobot --env NODE_OPTIONS="name=realsense_camera_node" --env TOPIC_REMAPPINGS="/test/myrobot/realsense_camera_node/color/camera_info:=/test/myrobot/realsense_camera/color/camera_info"`
 
 Hay variables que no se pueden configurar con `--env` en este flujo:
 

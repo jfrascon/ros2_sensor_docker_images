@@ -144,7 +144,13 @@ Example:
 
 With this example, the full new topic name is `/test/myrobot/realsense_camera/color/ci`.
 
-Since by default (if you do not use `TOPIC_REMAPPINGS`) topics are private and therefore include the node name, it is recommended to use the device/camera name as node name (for example `front_camera`, `rear_camera`, etc.) and avoid suffixes such as `_node`, because that suffix will also appear in topic names. In the topic hierarchy, it usually adds more value to identify the device that produces the information than the technical name of the node running it; the idea is that the topic name should describe the physical origin of the data (the camera), not an implementation detail (the node). And if you use `TOPIC_REMAPPINGS`, apply the same rule.
+Since by default (if you do not use `TOPIC_REMAPPINGS`) topics are private and therefore include the node name, the recommended approach, in this case, is to use the device/camera name as node name (for example `front_camera`, `rear_camera`, etc.) and avoid suffixes such as `_node`, because that suffix will also appear in topic names. Remember that the node name is set in `NODE_OPTIONS`, using the `name` key. In the topic hierarchy, it usually adds more value to identify the device that produces the information than the technical name of the node running it; the idea is that the topic name should describe the physical origin of the data (the camera), not an implementation detail (the node).
+
+If you use `TOPIC_REMAPPINGS`, you can choose any node name you consider appropriate, including `_node` suffixes (for example `front_camera_node`), as long as in remapping you apply the previous rule and expose topics with names focused on the camera/device.
+
+Example:
+
+`--env NAMESPACE=test --env ROBOT_NAME=myrobot --env NODE_OPTIONS="name=realsense_camera_node" --env TOPIC_REMAPPINGS="/test/myrobot/realsense_camera_node/color/camera_info:=/test/myrobot/realsense_camera/color/camera_info"`
 
 There are variables that cannot be configured with `--env` in this flow:
 
