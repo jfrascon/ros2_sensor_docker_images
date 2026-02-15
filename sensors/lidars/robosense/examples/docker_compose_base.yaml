@@ -1,0 +1,33 @@
+# https://docs.docker.com/compose/environment-variables/#the-env-file
+services:
+  robosense_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    ipc: host
+    volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+      - ${CONFIG_FILE_HOST:?CONFIG_FILE_HOST is required}:/tmp/config.yaml:ro
+      - ./run_launch.sh:/tmp/run_launch.sh:ro
+      - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
+    # Environment variables passed to the container.
+    # Keep CONFIG_FILE explicit here because it must match the path defined in 'volumes' above.
+    # This improves visibility and avoids hiding this fixed mapping inside the external .env file.
+    environment:
+      DISPLAY: ${DISPLAY}
+      QT_X11_NO_MITSHM: "1"
+      TERM: ${TERM:-xterm-256color}
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      RCUTILS_LOGGING_USE_STDOUT: "1"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
+      CONFIG_FILE: /tmp/config.yaml
+    # Additional environment variables are loaded from the file pointed to by ENV_FILE.
+    # Set ENV_FILE in the host environment before running `docker compose`.
+    env_file:
+      - ${ENV_FILE:?ENV_FILE is required}

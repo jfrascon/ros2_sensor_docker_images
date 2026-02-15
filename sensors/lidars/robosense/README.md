@@ -1,66 +1,121 @@
-# **RoboSense LiDAR: Drivers and SDKs**
+# RoboSense ROS2 in Docker
 
-RoboSense provides two main repositories for integrating their LiDAR sensors into custom or ROS-based systems.
+The `robosense` folder contains the files required to install the ROS2 packages for RoboSense LiDARs, together with their dependencies, in a Docker image.
+The ROS2 packages are installed from source code by cloning repositories.
 
-## rs_driver
+Official repositories:
+- RoboSense ROS2 packages: `https://github.com/RoboSense-LiDAR/rslidar_sdk`
+- `rs_driver` core driver: `https://github.com/RoboSense-LiDAR/rs_driver`
 
-A standalone C++ driver that handles raw packet decoding and point cloud generation.
-It is the **core component** used internally by the full SDK.
+This project currently uses maintained forks for `rslidar_sdk`, `rslidar_msg`, and `ros2_launch_helpers`, selected in `examples/refs.txt`.
 
-* Can be used directly in non-ROS applications.
-* Supports all major RoboSense LiDAR models.
+The `setup.sh`, `compile.sh`, and `eut_sensor.launch.py` scripts are designed to be used from a `Dockerfile` and automate image building.
 
-## rslidar_sdk
+## Usage example
 
-A complete SDK for ROS1 and ROS2 that **builds on top of `rs_driver`**.
+To illustrate how to use the files mentioned above, an example is provided in the `examples/` folder, where a `Dockerfile` is included to build an image that allows running the ROS2 packages for RoboSense LiDARs inside a Docker container.
 
-* Bundles `rs_driver` as a submodule and uses it for decoding.
-* Adds ROS/ROS2 nodes, message interfaces, launch files, and parameter handling.
-* Replaces the older `ros_rslidar` driver (now deprecated).
-* Supports ROS1 (Kinetic, Melodic, Noetic) and ROS2 (Galactic, Humble).
+The process is designed to be convenient for the user: run `examples/build.py` and indicate the ROS2 distro you want to use (`humble` or `jazzy`).
 
-## Supported sensors
+Example:
+```bash
+cd sensors/lidars/robosense/examples
+./build.py jazzy
+```
 
-Both `rs_driver` and `rslidar_sdk` support the full RoboSense product line:
+The script includes optional flags that may be useful (for example, cache control, base image pull, metadata, or image name). To see them:
+```bash
+./build.py -h
+```
 
-* **RS‑LiDAR‑16**, **RS‑LiDAR‑32**
-* **RS‑Bpearl**
-* **RS‑Helios**, **Helios‑16P**
-* **RS‑Ruby‑48/80/128**, **Ruby‑Plus‑48/80/128**
-* **RS‑M1**, **M2**, **M3**
-* **RS‑E1**, **MX**, **AIRY**
+In `examples/`, the file `refs.txt` defines the remote references (tags/branches) cloned for:
+- `rslidar_sdk`
+- `rslidar_msg`
+- `ros2_launch_helpers`
 
-## Docker Integration
+Expected format:
+```txt
+rslidar_sdk main
+rslidar_msg main
+ros2_launch_helpers main
+```
 
-The main objective of this folder is to provide a robust and reproducible mechanism to install the RoboSense ROS2 driver inside a Docker image. This approach encapsulates the execution environment, eliminating dependency conflicts and facilitating deployment on any host system.
+The RoboSense example supports two configurations:
+- `example 1`: one front LiDAR (`example_1.front_robosense_helios_16p_config.yaml`)
+- `example 2`: front and rear LiDARs (`example_2.front_back_robosense_helios_16p_config.yaml`)
 
-### Build Components
+Once the image is built with `examples/build.py`, you can start the container in two modes using `examples/run_docker_container.sh`:
 
-To orchestrate the image creation, three essential files are provided to modularize the process:
+- `automatic` mode: the container starts and automatically runs the ROS2 driver launch.
+- `manual` mode: the container starts without launching the driver, so you can enter a shell and run it manually.
 
-*   **`install.sh`**: Manages the installation of system dependencies and libraries required for the proper functioning of the SDK.
-*   **`compile.sh`**: Executes the compilation of the ROS2 workspace (*colcon build*), generating the driver binaries inside the container.
-*   **`eut_sensor.launch.py`**: A *launch file* designed to be embedded in the image, which standardizes node execution and dynamic parameter configuration.
+Example (if you built with `./build.py jazzy`, the default `img_id` is `robosense:jazzy`):
 
-To fully understand the build process, we primarily recommend reading the **Dockerfile** from the multi-sensor example located at the project root. This example illustrates how to create a Docker image for multiple sensors by reusing the `install`, `compile`, and `eut_sensor.launch.py` files associated with each sensor in this project.
+```bash
+cd sensors/lidars/robosense/examples
+./run_docker_container.sh robosense:jazzy automatic --example 1
+```
 
-The **Dockerfile** in the `examples/` folder is also recommended reading. It serves as a standalone reference for building an image dedicated solely to this sensor, suitable for testing or specific single-sensor deployments.
+If you prefer manual mode:
 
-#### Note on Repository Forks
+```bash
+cd sensors/lidars/robosense/examples
+./run_docker_container.sh robosense:jazzy manual --example 2
+docker compose exec -it robosense_srvc bash
+bash /tmp/run_launch_in_terminal.sh
+```
 
-The official repositories for `rslidar_sdk` and `rs_driver` tend to be slow in merging community Pull Requests that address bugs or introduce enhancements. Consequently, this project utilizes forked repositories that incorporate these community fixes and improvements (e.g., better ROS2 support, cleaner build processes).
+This example is also prepared to run graphical applications from the container and display them on the host through X11/XWayland.
 
-For specific details on which forks are used and the rationale (including referenced PRs), please consult the comments within the `install.sh` script.
+The `run_docker_container.sh` script allows configuring variables through `--env KEY=VALUE`.
 
-### Deployment Examples
+Variables with default values in this example:
 
-In the `examples/` folder, you will find the necessary resources to build an example image and deploy the driver. Configurations are included for two frequent use cases:
-1.  Running a single LiDAR sensor.
-2.  Simultaneous execution of two sensors using a single driver node instance.
+- `NAMESPACE` (default: empty)
+- `ROBOT_NAME` (default: `robot`)
+- `ROS_DOMAIN_ID` (default: `11`)
+- `NODE_OPTIONS` (default: `name=robosense_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
+- `LOGGING_OPTIONS` (default: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
 
-For detailed instructions on building and running, please refer to the `README.md` located inside the `examples` folder.
+`NODE_OPTIONS` and `LOGGING_OPTIONS` are `kvs` (key-value-string) variables, i.e., a string composed of `key=value` pairs separated by commas.
 
-## Reference
+Additional variables supported by the script:
 
-For more information on sensor configuration and the driver project, please refer to the official GitHub repository:
-https://github.com/RoboSense-LiDAR/rslidar_sdk
+- `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble and earlier, no default value)
+- `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy and later, no default value)
+- `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy and later, no default value)
+
+There are variables that cannot be configured with `--env` in this flow:
+
+- `RMW_IMPLEMENTATION`: fixed in `examples/docker_compose_base.yaml` as `rmw_cyclonedds_cpp`.
+- `CYCLONEDDS_URI`: fixed in `examples/docker_compose_base.yaml`.
+- `TOPIC_REMAPPINGS`: not supported in RoboSense; remappings are defined directly in the selected config file.
+- `CONFIG_FILE`: fixed in `examples/docker_compose_base.yaml`. It points to the selected config file mounted as `/tmp/config.yaml`.
+- `CONFIG_FILE_HOST`: selected internally by `run_docker_container.sh` from `--example`.
+- `IMG_ID`: taken from the script positional argument `<img_id>`.
+- `ENV_FILE`: managed internally by the script. It is the temporary `.env` file that `docker compose` loads through `env_file` (in `examples/docker_compose_base.yaml`) to pass environment variables to the container of service `robosense_srvc`.
+
+CycloneDDS configuration used in this example is defined in `examples/cyclonedds_config.xml`.
+
+The launch flow keeps the current config placeholder replacement behavior:
+- Config files can contain `{{robot_prefix}}`.
+- in this flow, `run_docker_container.sh` mounts the selected config file as `/tmp/config.yaml` according to `--example`.
+- `run_launch.sh` resolves `{{robot_prefix}}` in the config file and launches the driver using the effective config path.
+
+Example execution with overrides:
+
+```bash
+./run_docker_container.sh robosense:jazzy automatic --example 2 \
+  --env ROBOT_NAME=robot1 \
+  --env ROS_DOMAIN_ID=21 \
+  --env ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+```
+
+To see all available options:
+
+```bash
+./run_docker_container.sh -h
+```
+
+For more information on sensor configuration and the driver project:
+- https://github.com/RoboSense-LiDAR/rslidar_sdk

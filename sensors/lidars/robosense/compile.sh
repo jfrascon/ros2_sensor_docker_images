@@ -138,7 +138,7 @@ colcon build --packages-skip-build-finished --packages-select rslidar_msg "${col
 # The option COMPILE_TOOL_PCDSAVER is disabled since we can save a pcd from a ROS topic using the pcl_ros package.
 
 # The option COMPILE_TOOL_VIEWER is disabled because you can visualize the point cloud using RViz2.
-# If you ever want to enable it, you have to install the dependencies 'libboost-dev' and 'libpcl-dev' in the install.sh
+# If you ever want to enable it, you have to install the dependencies 'libboost-dev' and 'libpcl-dev' in the setup.sh
 # script.
 
 # POINT_TYPE: XYZI (default) XYZIRT XYZIF XYZIRTF

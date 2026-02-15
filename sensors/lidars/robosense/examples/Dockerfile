@@ -23,7 +23,7 @@ WORKDIR /root
 
 SHELL ["/bin/bash", "-c"]
 
-# Avoid installing recommended and suggested packages.
+# Avoid installing recommended and suggested packages when using 'apt-get install'.
 RUN tee /etc/apt/apt.conf.d/99norecommends.conf >/dev/null <<'EOF'
 APT::Install-Recommends "false";
 APT::Install-Suggests "false";
@@ -55,51 +55,31 @@ log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
   exit 1
 }
 
-[ ! -s /tmp/context/install_base_system.sh ] && {
-  log "Error: Missing 'install_base_system.sh' in the build context" >&2
-  exit 1
-}
+# Check that all the required files are present in the build context.
+required_context_files=(
+  install_base_system.sh
+  install_ros.sh
+  rosdep_init_update_install.sh
+  colcon_mixin_metadata.sh
+  entrypoint.sh
+  refs.txt
+  setup.sh
+  compile.sh
+  eut_sensor.launch.py
+)
 
-[ ! -s /tmp/context/install_ros.sh ] && {
-  log "Error: Missing 'install_ros.sh' in the build context" >&2
-  exit 1
-}
+for file in "${required_context_files[@]}"; do
+  if [ ! -f "/tmp/context/${file}" ]; then
+    log "Error: Missing '${file}' in the build context" >&2
+    exit 1
+  fi
+done
 
-[ ! -s /tmp/context/rosdep_init_update_install.sh ] && {
-  log "Error: Missing 'rosdep_init_update_install.sh' in the build context" >&2
-  exit 1
-}
+# ------------------------------------------------------------------------------
+# Base system installation
+# ------------------------------------------------------------------------------
 
-[ ! -s /tmp/context/colcon_mixin_metadata.sh ] && {
-  log "Error: Missing 'colcon_mixin_metadata.sh' in the build context" >&2
-  exit 1
-}
-
-[ ! -s /tmp/context/entrypoint.sh ] && {
-  log "Error: Missing 'entrypoint.sh' in the build context" >&2
-  exit 1
-}
-
-[ ! -s /tmp/context/install.sh ] && {
-  log "Error: Missing 'install.sh' in the build context" >&2
-  exit 1
-}
-
-[ ! -s /tmp/context/compile.sh ] && {
-  log "Error: Missing 'compile.sh' in the build context" >&2
-  exit 1
-}
-
-[ ! -s /tmp/context/eut_sensor.launch.py ] && {
-  log "Error: Missing 'eut_sensor.launch.py' in the build context" >&2
-  exit 1
-}
-
-# --------------------------------------------------------------------------------------
-# BASE SYSTEM installation
-# --------------------------------------------------------------------------------------
-
-# By using bash it does not matter if the script has or not the execution permission.
+# By using the command 'bash' explicitly it does not matter if the script has or not the execution permission.
 bash /tmp/context/install_base_system.sh "${IMAGE_MAIN_USER}" || {
     log "Error: Failed to run 'install_base_system.sh'" 1>&2
     exit 1
@@ -116,9 +96,9 @@ if [ "${image_main_user_home}" != "/home/${IMAGE_MAIN_USER}" ]; then
   exit 1
 fi
 
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # ROS installation
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 bash /tmp/context/install_ros.sh "${ROS_DISTRO}" "${ROS_VERSION}" || {
     log "Error: Failed to run 'install_ros.sh'" 1>&2
@@ -156,17 +136,20 @@ echo "${line}" >>"${rosdep_ignored_keys_index_file}"
 log "Added line '${line}' to file '${rosdep_ignored_keys_index_file}'"
 
 
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Sensor installation
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
-log "Executing script 'install.sh' for Robosense LiDAR sensor"
+log "Executing script 'setup.sh' for Robosense LiDAR sensor"
 
 # Path to the directory where the repositories will be cloned.
 pkgs_dir="${IMAGE_MAIN_USER_WORKSPACE}/src"
 mkdir --verbose --parent "${pkgs_dir}"
 
-bash /tmp/context/install.sh "${pkgs_dir}"
+bash /tmp/context/setup.sh "${pkgs_dir}" "/tmp/context/refs.txt" || {
+    log "Error: Failed to run 'setup.sh'" 1>&2
+    exit 1
+}
 
 # -------------------------------------------- End of sensor installation ----------------------------------------------
 
@@ -188,7 +171,7 @@ install -D -m 0755 /tmp/context/entrypoint.sh /usr/local/bin/entrypoint.sh
 log "Setting ownership of path '${image_main_user_home}' to user '${IMAGE_MAIN_USER}' (UID '${image_main_user_id}') and primary group '${image_main_user_pri_group}' (GID '${image_main_user_pri_group_id}')"
 chown --recursive "${IMAGE_MAIN_USER}":"${image_main_user_pri_group}" "${image_main_user_home}"
 
-# Debugging info
+# Debugging info; uncomment if needed.
 # echo '#########################################################################################################'
 # ls -la "${image_main_user_home}"
 # echo '---------------------------------------------------------------------------------------------------------'
@@ -240,7 +223,6 @@ ENV TZ="Etc/UTC" \
   LANGUAGE="en_US:en" \
   ROS_HOME="/home/${IMAGE_MAIN_USER}/.ros" \
   ROS_LOG_DIR="/home/${IMAGE_MAIN_USER}/.ros/log" \
-  ROS_TEST_RESULTS_DIR="/home/${IMAGE_MAIN_USER}/.ros/tests" \
   ROS_TEST_RESULTS_DIR="/home/${IMAGE_MAIN_USER}/.ros/tests" \
   ROS_CONFIG_HOME="/home/${IMAGE_MAIN_USER}/.config/ros.org"
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

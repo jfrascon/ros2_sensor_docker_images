@@ -163,6 +163,8 @@ if __name__ == '__main__':
 
     exit_code = 0  # Return code for the script.
 
+    # Copy the files in the 'base_docker_files' directory to the temporary context, since they are needed for the
+    # creation of the Docker image.
     for file in base_docker_files_dir.iterdir():
         if file.is_file():
             try:
@@ -170,7 +172,8 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f'Error copying {file} to {tmp_context_dir}: {e}')
 
-    shutil.copy2(robosense_dir.joinpath('install.sh'), tmp_context_dir.joinpath('install.sh'))
+    shutil.copy2(robosense_dir.joinpath('setup.sh'), tmp_context_dir.joinpath('setup.sh'))
+    shutil.copy2(examples_dir.joinpath('refs.txt'), tmp_context_dir.joinpath('refs.txt'))
     shutil.copy2(robosense_dir.joinpath('compile.sh'), tmp_context_dir.joinpath('compile.sh'))
     shutil.copy2(robosense_dir.joinpath('eut_sensor.launch.py'), tmp_context_dir.joinpath('eut_sensor.launch.py'))
 
@@ -183,7 +186,7 @@ if __name__ == '__main__':
     # docker-py doesn't support BuildKit, and has an issue open for almost 6 years
     # (https://github.com/docker/docker-py/issues/2230) so it doesn't seem like it is being added.
     # Therefore, we use the subprocess module to call docker build... so that we can enable
-    # BuildKit, and thus mount volume during buil
+    # BuildKit, and thus mount volume during build.
 
     os.environ['DOCKER_BUILDKIT'] = '1'
 

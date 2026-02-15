@@ -8,10 +8,9 @@ from typing import Any, Dict, List
 
 import ros2_launch_helpers as rlh
 from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
-from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction, SetLaunchConfiguration  # noqa: F401
+from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterFile  # noqa: F401
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -41,13 +40,11 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
 
     # If the node's name is not set, set a default one.
     if not str(node_options['name']).strip():
-        node_options['name'] = 'robosense_lidar_ros2_driver'
+        node_options['name'] = 'robosense_lidar_ros2_handler'
 
     logging_options = rlh.process_logging_options(LaunchConfiguration('logging_options').perform(ctx))
 
     ros_arguments = logging_options
-
-    # Robosense drivers gets the topics from the config file, so remappings are not needed.
 
     # Each executable 'rslidar_sdk_node' will spawn a node called 'param_handle' and 'N' nodes, one for each
     # LiDAR described in the config file under the 'lidar' key.
@@ -56,7 +53,7 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     # We have to re-name those nodes properly, prepending the robot name and a unique index.
 
     # Renaming of one param_handle.
-    ros_arguments.extend(['-r', f'param_handle:__node:={node_options["name"]}_param_handler'])
+    ros_arguments.extend(['-r', f'param_handle:__node:={node_options["name"]}_params'])
 
     config_file = LaunchConfiguration('config_file').perform(ctx).strip()
 
@@ -69,7 +66,7 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
                 [
                     # remappings of names of those nodes for each binary executed
                     '-r',
-                    f'rslidar_points_destination_{index}:__node:={node_options["name"]}_handler_{index}',
+                    f'rslidar_points_destination_{index}:__node:={node_options["name"]}_lidar_{index}',
                 ]
             )
 
@@ -88,7 +85,6 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
                 # name = node_name NOT ADDED ON PURPOSE, read above.
                 # This launch file is always used with real hardware, never in simulation.
                 parameters=[{'use_sim_time': False, 'config_path': config_file}],
-                # No remappings needed, topics are defined in the config_file.
                 ros_arguments=ros_arguments,
                 output=node_options['output'],
                 emulate_tty=node_options['emulate_tty'],
@@ -108,10 +104,9 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
 
 def process_config_file(config_file: str) -> Dict[str, Any]:
     """
-    Process the configuration file, substituting the 'robot_prefix' in the configuration file.
-    :param params_file: Configuration file.
-    :param robot_prefix: Robot prefix to substitute in the configuration file.
-    :return: Path to the new configuration file with the substituted 'robot_prefix'.
+    Validate the RoboSense configuration file structure.
+    :param config_file: Configuration file.
+    :return: Parsed configuration mapping.
     """
 
     _, config = rlh.read_yaml_mapping(config_file)
