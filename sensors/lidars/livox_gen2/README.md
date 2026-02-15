@@ -1,57 +1,123 @@
-# Mapping Livox LiDAR models to their corresponding SDKs and ROS drivers
+# Livox Gen2 ROS2 in Docker
 
-Livox LiDAR sensors are divided into two technological generations, each based on a distinct communication protocol and software stack. Correct integration depends on the specific model of the sensor.
+The `livox_gen2` folder contains the files required to install the ROS2 packages for Livox second-generation LiDARs (HAP and Mid-360), together with their dependencies, in a Docker image.
+Both the ROS2 packages and the Livox SDK dependency are installed from source code by cloning their repositories.
 
-## First-generation sensors
+Official repositories:
+- Livox ROS2 packages: `https://github.com/Livox-SDK/livox_ros_driver2`
+- Livox SDK2: `https://github.com/Livox-SDK/Livox-SDK2`
 
-The **Mid-40**, **Mid-70**, **Horizon**, **Tele-15**, and **Avia** models use the original Livox protocol (v1). They must be integrated using the following components:
+This project currently uses maintained forks for `livox_ros_driver2` and `livox_sdk2`, selected in `examples/refs.txt`.
 
-* **SDK:** `Livox-SDK`
-* **ROS1 driver:** `livox_ros_driver`
-* **ROS2 driver:** `livox_ros2_driver`
+The `setup.sh`, `compile.sh`, and `eut_sensor.launch.py` scripts are designed to be used from a `Dockerfile` and automate image building.
 
-The `livox_ros2_driver` is a partial port of the ROS1 driver and provides basic ROS2 compatibility. While functional, it is less mature and feature-complete than the drivers developed for newer sensor models.
+## Usage example
 
-## Second-generation sensors
+To illustrate how to use the files mentioned above, an example is provided in the `examples/` folder, where a `Dockerfile` is included to build an image that allows running the ROS2 packages for Livox Gen2 LiDARs inside a Docker container.
 
-The **HAP** and **Mid-360** models rely on a newer communication protocol (v2), introduced with the updated software stack. These sensors require:
+The process is designed to be convenient for the user: run `examples/build.py` and indicate the ROS2 distro you want to use (`humble` or `jazzy`).
 
-* **SDK:** `Livox-SDK2`
-* **Unified ROS1/ROS2 driver:** `livox_ros_driver2`
+Example:
+```bash
+cd sensors/lidars/livox_gen2/examples
+./build.py jazzy
+```
 
-This driver supports both ROS1 and ROS2 natively, offers improved maintainability, and includes dedicated configuration scripts for each sensor type. It also enables concurrent connection of multiple devices with minimal overhead.
+The script includes optional flags that may be useful (for example, cache control, base image pull, metadata, or image name). To see them:
+```bash
+./build.py -h
+```
 
-## Docker Integration
+In `examples/`, the file `refs.txt` defines the remote references (tags/branches) cloned for:
+- `livox_sdk2`
+- `livox_ros_driver2`
+- `ros2_launch_helpers`
 
-The main objective of this folder is to provide a robust and reproducible mechanism to install the Livox ROS2 driver (specifically for second-generation sensors like HAP and Mid-360) inside a Docker image. This approach encapsulates the execution environment, eliminating dependency conflicts and facilitating deployment on any host system.
+Expected format:
+```txt
+livox_sdk2 main
+livox_ros_driver2 main
+ros2_launch_helpers main
+```
 
-### Build Components
+The Livox example supports two configurations:
+- `example 1`: one front LiDAR (`example_1.front_livox_mid360.json` + `example_1.front_livox_mid360.yaml`)
+- `example 2`: front and rear LiDARs (`example_2.front_back_livox_mid360.json` + `example_2.front_back_livox_mid360.yaml`)
 
-To orchestrate the image creation, three essential files are provided to modularize the process:
+Once the image is built with `examples/build.py`, you can start the container in two modes using `examples/run_docker_container.sh`:
 
-*   **`install.sh`**: Manages the installation of the **Livox-SDK2**, the **livox_ros_driver2**, and other system dependencies required for the proper functioning of the driver.
-*   **`compile.sh`**: Executes the compilation of the ROS2 workspace (*colcon build*), generating the driver binaries inside the container.
-*   **`eut_sensor.launch.py`**: A *launch file* designed to be embedded in the image, which standardizes node execution and dynamic parameter configuration.
+- `automatic` mode: the container starts and automatically runs the ROS2 driver launch.
+- `manual` mode: the container starts without launching the driver, so you can enter a shell and run it manually.
 
-To fully understand the build process, we primarily recommend reading the **Dockerfile** from the multi-sensor example located at the project root. This example illustrates how to create a Docker image for multiple sensors by reusing the `install`, `compile`, and `eut_sensor.launch.py` files associated with each sensor in this project.
+Example (if you built with `./build.py jazzy`, the default `img_id` is `livox_gen2:jazzy`):
 
-The **Dockerfile** in the `examples/` folder is also recommended reading. It serves as a standalone reference for building an image dedicated solely to this sensor, suitable for testing or specific single-sensor deployments.
+```bash
+cd sensors/lidars/livox_gen2/examples
+./run_docker_container.sh livox_gen2:jazzy automatic --example 1
+```
 
-#### Note on Repository Forks
+If you prefer manual mode:
 
-The official repositories for `Livox-SDK2` and `livox_ros_driver2` tend to be slow in merging community Pull Requests that address bugs or introduce enhancements. Consequently, this project utilizes forked repositories that incorporate these community fixes and improvements (e.g., better ROS2 support, cleaner build processes).
+```bash
+cd sensors/lidars/livox_gen2/examples
+./run_docker_container.sh livox_gen2:jazzy manual --example 2
+docker compose exec -it livox_gen2_srvc bash
+bash /tmp/run_launch_in_terminal.sh
+```
 
-For specific details on which forks are used and the rationale (including referenced PRs), please consult the comments within the `install.sh` script.
+This example is also prepared to run graphical applications from the container and display them on the host through X11/XWayland.
 
-### Deployment Examples
+The `run_docker_container.sh` script allows configuring variables through `--env KEY=VALUE`.
 
-In the `examples/` folder, you will find the necessary resources to build an example image and deploy the driver. Configurations are included for two frequent use cases:
-1.  Running a single LiDAR sensor (e.g., Mid-360).
-2.  Simultaneous execution of two sensors using a single driver node instance.
+Variables with default values in this example:
 
-For detailed instructions on building and running, please refer to the `README.md` located inside the `examples` folder.
+- `NAMESPACE` (default: empty)
+- `ROBOT_NAME` (default: `robot`)
+- `ROS_DOMAIN_ID` (default: `11`)
+- `NODE_OPTIONS` (default: `name=livox,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
+- `LOGGING_OPTIONS` (default: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
 
-## Reference
+`NODE_OPTIONS` and `LOGGING_OPTIONS` are `kvs` (key-value-string) variables, i.e., a string composed of `key=value` pairs separated by commas.
 
-For more information on sensor configuration and the driver project, please refer to the official GitHub repository:
-https://github.com/Livox-SDK/livox_ros_driver2
+Additional variables supported by the script:
+
+- `TOPIC_REMAPPINGS`: remapping string in `OLD:=NEW` format, with comma-separated pairs.
+- `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble and earlier, no default value)
+- `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy and later, no default value)
+- `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy and later, no default value)
+
+There are variables that cannot be configured with `--env` in this flow:
+
+- `RMW_IMPLEMENTATION`: fixed in `examples/docker_compose_base.yaml` as `rmw_cyclonedds_cpp`.
+- `CYCLONEDDS_URI`: fixed in `examples/docker_compose_base.yaml`.
+- `PARAMS_FILE`: fixed in `examples/docker_compose_base.yaml`. It points to the selected YAML file mounted as `/tmp/params.yaml`.
+- `USER_CONFIG_FILE_HOST`: selected internally by `run_docker_container.sh` from `--example`.
+- `PARAMS_FILE_HOST`: selected internally by `run_docker_container.sh` from `--example`.
+- `IMG_ID`: taken from the script positional argument `<img_id>`.
+- `ENV_FILE`: managed internally by the script. It is the temporary `.env` file that `docker compose` loads through `env_file` (in `examples/docker_compose_base.yaml`) to pass environment variables to the container of service `livox_gen2_srvc`.
+
+CycloneDDS configuration used in this example is defined in `examples/cyclonedds_config.xml`.
+
+The launch flow keeps the current JSON/YAML placeholder replacement behavior:
+- JSON files can contain `{{robot_prefix}}`.
+- in this flow, `run_docker_container.sh` mounts the selected JSON as `/tmp/user_config.json` according to `--example`.
+- `user_config_path` in `PARAMS_FILE` must point to `/tmp/user_config.json`.
+- `run_launch.sh` resolves `{{robot_prefix}}` in the JSON pointed by `user_config_path` and updates `user_config_path` in a temporary YAML when needed.
+
+Example execution with overrides:
+
+```bash
+./run_docker_container.sh livox_gen2:jazzy automatic --example 2 \
+  --env ROBOT_NAME=robot1 \
+  --env ROS_DOMAIN_ID=21 \
+  --env ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+```
+
+To see all available options:
+
+```bash
+./run_docker_container.sh -h
+```
+
+For more information on sensor configuration and the driver project:
+- https://github.com/Livox-SDK/livox_ros_driver2

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CycloneDDS xmlns="https://cdds.io/config"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://cdds.io/config https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclonedds.xsd">
+    <Domain Id="any">
+        <General>
+            <Interfaces>
+                <!-- You can define more than one NetworkInterface (for example: loopback + Wi-Fi + LAN). -->
+                <!-- multicast="default" inherits the effective policy from <AllowMulticast>. -->
+                <NetworkInterface name="lo" multicast="default"/>
+                <!-- Uncomment and adapt as needed for multi-machine communication. -->
+                <!-- <NetworkInterface name="wlan0" multicast="default"/> -->
+                <!-- <NetworkInterface name="eth0" multicast="default"/> -->
+            </Interfaces>
+            <AllowMulticast>false</AllowMulticast>
+            <MaxMessageSize>65500B</MaxMessageSize>
+            <FragmentSize>4000B</FragmentSize>
+        </General>
+        <Discovery>
+            <ParticipantIndex>auto</ParticipantIndex>
+            <MaxAutoParticipantIndex>100</MaxAutoParticipantIndex>
+            <Peers>
+                <!-- Keep localhost for local discovery when multicast is disabled. -->
+                <Peer Address="127.0.0.1"/>
+                <!-- Add remote peers (uncomment and replace with real IPs). -->
+                <!-- <Peer Address="192.168.1.50"/> --> <!-- Remote peer over Wi-Fi -->
+                <!-- <Peer Address="192.168.0.50"/> --> <!-- Remote peer over wired LAN -->
+            </Peers>
+        </Discovery>
+        <Internal>
+            <SocketReceiveBufferSize min="10MB"/>
+            <Watermarks>
+                <WhcHigh>500kB</WhcHigh>
+            </Watermarks>
+        </Internal>
+        <!--
+        <Tracing>
+            <Verbosity>config</Verbosity>
+            <Verbosity>finest</Verbosity>
+            <OutputFile>cyclonedds.log.${CYCLONEDDS_PID}</OutputFile>
+            <OutputFile>stdout</OutputFile>
+        </Tracing>
+        -->
+    </Domain>
+</CycloneDDS>
