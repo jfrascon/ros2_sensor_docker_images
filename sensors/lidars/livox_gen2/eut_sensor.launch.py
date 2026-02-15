@@ -48,7 +48,7 @@ def launch_node(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
 
     # If the node's name is not set, set a default one.
     if not str(node_options['name']).strip():
-        node_options['name'] = 'livox'
+        node_options['name'] = 'livox_gen2_lidar_ros2_handler'
 
     # Process logging options, including 'log-level', 'disable-stdout-logs', 'disable-rosout-logs',
     # 'disable-external-lib-logs', and custom logger levels.

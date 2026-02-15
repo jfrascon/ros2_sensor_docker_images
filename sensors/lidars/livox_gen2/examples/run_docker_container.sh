@@ -31,7 +31,7 @@ NAMESPACE_DEF=""
 ROBOT_NAME_DEF="robot"
 ROS_DOMAIN_ID_DEF="11"
 EXAMPLE_DEF="1"
-NODE_OPTIONS_DEF="name=livox,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+NODE_OPTIONS_DEF="name=livox_gen2_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
 LOGGING_OPTIONS_DEF="log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
 TOPIC_REMAPPINGS_DEF=""
 
@@ -201,15 +201,15 @@ for env_kv in "${env_vars[@]}"; do
         echo "Error: --env CYCLONEDDS_URI is not allowed; it is fixed in docker_compose_base.yaml" >&2
         exit 1
         ;;
-    PARAMS_FILE)
-        echo "Error: --env PARAMS_FILE is not allowed; it is fixed in docker_compose_base.yaml" >&2
-        exit 1
-        ;;
     USER_CONFIG_FILE_HOST)
         echo "Warning: ignoring --env USER_CONFIG_FILE_HOST=... (selected internally from --example)" >&2
         ;;
     PARAMS_FILE_HOST)
         echo "Warning: ignoring --env PARAMS_FILE_HOST=... (selected internally from --example)" >&2
+        ;;
+    PARAMS_FILE)
+        echo "Error: --env PARAMS_FILE is not allowed; it is fixed in docker_compose_base.yaml" >&2
+        exit 1
         ;;
     NODE_OPTIONS)
         NODE_OPTIONS="${env_val}"
@@ -258,7 +258,7 @@ print_banner_text "=" "Launching Livox Gen2 in a Docker container of image '${IM
 xhost +local:
 
 IMG_ID="${IMG_ID}" \
-USER_CONFIG_FILE_HOST="${USER_CONFIG_FILE_HOST}" \
-PARAMS_FILE_HOST="${PARAMS_FILE_HOST}" \
-ENV_FILE="${env_file}" \
- docker compose "${compose_files[@]}" up -d
+    USER_CONFIG_FILE_HOST="${USER_CONFIG_FILE_HOST}" \
+    PARAMS_FILE_HOST="${PARAMS_FILE_HOST}" \
+    ENV_FILE="${env_file}" \
+    docker compose "${compose_files[@]}" up -d
