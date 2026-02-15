@@ -164,6 +164,8 @@ if __name__ == '__main__':
 
     exit_code = 0  # Return code for the script.
 
+    # Copy the files in the 'base_docker_files' directory to the temporary context, since they are needed for the
+    # creation of the Docker image.
     for file in base_docker_files_dir.iterdir():
         if file.is_file():
             try:
@@ -185,7 +187,7 @@ if __name__ == '__main__':
     # docker-py doesn't support BuildKit, and has an issue open for almost 6 years
     # (https://github.com/docker/docker-py/issues/2230) so it doesn't seem like it is being added.
     # Therefore, we use the subprocess module to call docker build... so that we can enable
-    # BuildKit, and thus mount volume during buil
+    # BuildKit, and thus mount volume during build.
 
     os.environ['DOCKER_BUILDKIT'] = '1'
 

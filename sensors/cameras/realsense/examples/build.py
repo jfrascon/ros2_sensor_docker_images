@@ -194,7 +194,7 @@ if __name__ == '__main__':
     # docker-py doesn't support BuildKit, and has an issue open for almost 6 years
     # (https://github.com/docker/docker-py/issues/2230) so it doesn't seem like it is being added.
     # Therefore, we use the subprocess module to call docker build... so that we can enable
-    # BuildKit, and thus mount volume during buil
+    # BuildKit, and thus mount volume during build.
 
     os.environ['DOCKER_BUILDKIT'] = '1'
 
