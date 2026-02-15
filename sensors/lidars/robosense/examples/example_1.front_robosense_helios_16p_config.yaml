@@ -64,18 +64,18 @@ lidar:
           # pcap_path: /home/robosense/lidar.pcap # The path of pcap file
       ros:
           # Frame id of packet message and point cloud message.
-          ros_frame_id: "{{robot_prefix}}front_lidar_link"
+          ros_frame_id: "{{robot_prefix}}front_robosense_lidar_link"
 
           # Since the 'topics' indicated nex do not start with '/', the published topics will be preffix with the
           # '<robot_namespace>.
 
           # Topic used to receive LiDAR packets from ROS.
-          ros_recv_packet_topic: front_lidar/packets
+          ros_recv_packet_topic: front_robosense_lidar/packets
           # Topic used to send LiDAR packets through ROS.
-          ros_send_packet_topic: front_lidar/packets
+          ros_send_packet_topic: front_robosense_lidar/packets
           # Topic used to send imu data through ROS.
-          ros_send_imu_data_topic: front_lidar/imu/data
+          ros_send_imu_data_topic: front_robosense_lidar/imu/data
           # Topic used to send point cloud through ROS.
-          ros_send_point_cloud_topic: front_lidar/scan/points
+          ros_send_point_cloud_topic: front_robosense_lidar/scan/points
           # QoS history depth.
           ros_queue_length: 100
