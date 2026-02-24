@@ -1,254 +1,255 @@
-# Multi-sensor examples (UMX IMU + Livox Gen2 LiDAR + RoboSense LiDAR)
+# Multi-sensor Docker example (UMX + Livox Gen2 + RoboSense)
 
-## Objective
+This folder provides a practical example of how to build your own Docker image with ROS2 sensor handlers and run a multi-sensor deployment.
 
-This README explains how to build a single Docker image that contains the UMX IMU, Livox Gen2 LiDAR, and RoboSense
-LiDAR ROS 2 drivers, along with example configuration files you can reuse in your own deployments.
+The main goal is to show one possible structure that you can reuse in your own project. It is only an example, not a mandatory template.
 
-## File structure
+## What this example shows
 
-- `Dockerfile`: example image that installs and compiles all three drivers.
-- `build.py`: utility to build the Docker image.
-- `exec_docker_compose.sh`: starts the containers with Docker Compose in automatic or manual mode.
-- `exec_launch_file_umx.sh`: starts the UMX driver inside the container (mounted as `/tmp/exec_launch_file.sh`).
-- `exec_launch_file_livox_gen2.sh`: starts the Livox Gen2 driver inside the container (mounted as `/tmp/exec_launch_file.sh`).
-- `exec_launch_file_robosense.sh`: starts the RoboSense driver inside the container (mounted as `/tmp/exec_launch_file.sh`).
-- `exec_manual_launch.sh`: helper to start the driver inside a manual container.
-- `dc_base.yaml`: base compose file (network, volumes, common variables).
-- `dc_mode_automatic.yaml`: compose file to start the drivers automatically.
-- `dc_mode_manual.yaml`: compose file to start the containers without launching the drivers.
-- `imu_params.yaml`: ROS params for the UMX IMU example.
-- `livox_config.json`: Livox Gen2 JSON configuration (single sensor).
-- `livox_params.yaml`: ROS params for the Livox Gen2 example.
-- `robosense_config.yaml`: RoboSense YAML configuration (single sensor).
+- How to build a single Docker image that contains low-level sensor installations plus ROS2 handlers.
+- How to run each sensor in its own container.
+- How to combine multiple `docker compose` files in one final launch command.
+- How to centralize deployment variables in an environment file.
 
-## Prerequisites
+## Key files and responsibilities
 
-- Docker and Docker Compose v2 available on the host.
-- Permissions to run Docker (the `docker` group or sudo).
-- Host network connectivity to the sensors (same subnet or reachable route).
+- `build.py`: simple helper to run `docker build` with the required build arguments and metadata.
+- `Dockerfile`: the core of the installation logic. This is where the real setup happens.
+- `run_docker_container.sh`: utility helper to start the deployment in `automatic` or `manual` mode.
+- `deployment.env`: user-editable runtime values (namespaces, IDs, sensor config paths, etc.).
 
-## Build the image
+## Why the Dockerfile is important
 
-The image is built with `build.py`, which uses this folder as the Docker build context. The `Dockerfile` clones the
-repository into `/tmp/sensor_images`, then reuses the `install.sh` and `compile.sh` scripts from each sensor package.
+`build.py` is intentionally simple. The important part is the `Dockerfile`.
 
-Basic build:
+During image build, the `Dockerfile` clones the sensor repository.
+Then it reuses each sensor's setup/compile files.
+This mirrors how many users integrate sensor folders in real projects.
 
-```bash
-python example_multi_sensor/build.py jazzy
-```
+If you want to adapt this example, inspect the `Dockerfile` first.
 
-Help and options:
+## Compose structure (chained files)
 
-```text
-usage: build.py [-h] [-c] [-p] [--img-id IMG_ID] [--meta-title META_TITLE]
-                [--meta-desc META_DESC] [--meta-authors META_AUTHORS]
-                ros_distro
+In this example, the final deployment is launched by chaining compose files:
 
-Script to build a ROS2 multi-sensor Docker image (IMU UMX + Livox Gen2 LiDAR + Robosense LiDAR).
+- Base compose: `docker_compose_base.yaml`
+- Mode compose: `docker_compose_mode_automatic.yaml` or `docker_compose_mode_manual.yaml`
+- Optional GUI compose: `docker_compose_gui.yaml` (only when host display is available)
 
-positional arguments:
-  ros_distro                   Supported ROS distros: humble, jazzy
+In this example, three compose YAML files are used to let users test different launch combinations (`base` + `mode` + optional `gui`).
 
-options:
-  -h, --help                   Show help
-  -c, --cache                  Reuse cached layers to optimize the time and resources needed to build the image.
-  -p, --pull                   If no local copy of the base image exists, Docker will download it automatically from
-                               the proper registry. If there is a local copy of the base image, Docker will get the
-                               version available in the proper registry, and if the version from the registry is newer
-                               than the local copy, it will be downloaded and used. If the local copy is the latest
-                               version, it will not be downloaded again.
-                               Without --pull Docker uses the local copy of the base image if it is available on the
-                               system. If no local copy exists, Docker will download it automatically.
-                               Usage of --pull is recommended to ensure an updated base image is used.
-  --img-id IMG_ID              Built Docker image ID. Default: multi_sensor:<ros_distro>
-  --meta-title META_TITLE      Image title for OCI metadata
-  --meta-desc META_DESC        Image description for OCI metadata
-  --meta-authors META_AUTHORS  Image authors
-```
+For a real production deployment, this is usually simpler:
 
-Build considerations:
+- `docker_compose_base.yaml`
+- optionally `docker_compose_gui.yaml` only if the host has GUI capabilities
 
-- `--pull` is recommended to ensure you use the latest base Ubuntu image.
-- By default the build uses `--no-cache`; add `--cache` to reuse layers.
-- The build runs with `DOCKER_BUILDKIT=1` and `--network=host`.
+In many production setups, `run_docker_container.sh` is not needed.
+The final `docker compose` command is run directly in a terminal.
 
-## Run example (multi-sensor)
-
-Use `exec_docker_compose.sh` to start the containers in automatic or manual mode. The script mounts the example
-configuration files; in automatic mode it launches the three drivers.
-
-Help and options:
-
-```text
-Usage:
-  exec_docker_compose.sh <img_id> <mode> [options]
-
-Positional arguments:
-  img_id        Docker image ID with the multi-sensor ROS2 drivers
-  mode          How to run the example: automatic or manual
-
-Options:
-  --namespace VALUE         Namespace prefix (default: empty)
-  --robot-name VALUE        Robot name (default: robot)
-  --ros-domain-id VALUE     ROS domain ID (default: 11)
-  --rmw-implementation VAL  RMW implementation (default: rmw_zenoh_cpp)
-  --env env_var             Additional environment variable in KEY=VALUE format (repeatable)
-  --help          Show this help and exit
-```
-
-You can also run `./exec_docker_compose.sh -h` or `./exec_docker_compose.sh --help` to see usage.
-
-Quick start:
+Example of a command you will probably use in production (direct terminal execution, no wrapper script):
 
 ```bash
-./exec_docker_compose.sh multi_sensor:jazzy automatic
+IMG_ID=multi_sensor:jazzy docker compose --env-file ./deployment.env \
+  -f docker_compose_base.yaml \
+  up -d
 ```
 
-How it works:
+### `docker_compose_base.yaml`
 
-- Mode: there are two modes, `automatic` and `manual`. In `automatic`, it combines `dc_base.yaml` +
-  `dc_mode_automatic.yaml`, where each service runs `/tmp/exec_launch_file.sh` (mapped per service). In `manual`, it
-  combines `dc_base.yaml` + `dc_mode_manual.yaml`; then you open a shell in the running container and execute
-  `/tmp/exec_manual_launch.sh`.
-- The compose file defines three services: `umx_imu_srvc`, `livox_gen2_lidar_srvc`, and `robosense_lidar_srvc`.
-- Each service runs with `network_mode: host` and mounts its own example config/params files into `/tmp`.
-- The UMX IMU service additionally mounts `/dev` to access the serial device.
-- Each service uses the same `NAMESPACE`, `ROBOT_NAME`, `NODE_OPTIONS`, `LOGGING_OPTIONS`, and `TOPIC_REMAPPINGS` naming
-  scheme as its sensor-specific examples.
+This is the main compose file in this example. It defines all services and the base runtime settings.
 
-Automatic mode logs:
+About environment variables, there are two valid approaches:
 
-Run these commands in another host terminal. If you did not use `--env`, follow all driver output with:
+- Simple and explicit approach: define all needed environment variables directly in each service, even if that means repeating the same values several times.
+- Reusable approach: define common variables once and reuse them across services.
+
+In this example, the reusable approach is implemented with `x-common-environment`.
+That block is a YAML anchor defined at the top of the file.
+
+A YAML anchor is a reusable YAML block:
+
+- it is declared once (for example `&common-environment`),
+- then referenced by its name in each service where it is needed (for example `<<: *common-environment`).
+
+Reference: https://docs.docker.com/reference/compose-file/fragments/
+
+### `docker_compose_gui.yaml`
+
+This is an optional GUI support file (X11/XWayland).
+In this example, `run_docker_container.sh` adds it only when `DISPLAY` is available on the host.
+
+Why this matters:
+
+- If the host has no display, GUI-related mappings are not useful, so this file is skipped.
+- If the host has a display and you want GUI tools (for example RViz2 in manual debugging), this file is included.
+
+For your own project, you do not need to keep this split.
+You can do several things, for example:
+
+- merge the GUI lines directly into your final compose file:
+  keep a single compose file and copy the X11-related mounts and environment variables (from `docker_compose_gui.yaml`) into each service definition.
+  With this approach, you do not need a separate GUI compose file.
+- enable GUI only for selected sensor services:
+  for example, enable GUI only in the service where you run RViz2, and keep other sensor services headless.
+- enable GUI for all services:
+  useful when you want any container to be able to open graphical tools during development/debug.
+- remove GUI support completely if your host is headless:
+  if the deployment host has no display, drop GUI-specific lines and keep a pure headless compose setup.
+
+Important: if you want GUI, you must grant X11 permissions on the host before `docker compose up`, for example:
 
 ```bash
-docker compose -f dc_base.yaml -f dc_mode_automatic.yaml logs -f
+xhost +local:
 ```
 
-If you used `--env`, the script prints the extra-env file path (for example `/tmp/dc_extra_env_ABC123.yaml`). Include it
-so Compose reads the same configuration:
+In this example, `run_docker_container.sh` already runs this step automatically.
+It does that when a host display is detected (`DISPLAY`) and `docker_compose_gui.yaml` is included.
+The command is shown here for users who run `docker compose` directly without the wrapper script.
+
+### `docker_compose_mode_automatic.yaml` and `docker_compose_mode_manual.yaml`
+
+These mode files are specific to this example.
+They let the user choose between two ways of running the same deployment:
+
+- Automatic mode: when running `docker compose ... up`, sensor launch wrappers are executed automatically.
+- Manual mode: containers start without launching sensors; then you connect with `docker exec` and launch each sensor manually for testing/debugging.
+
+## About `run_docker_container.sh`
+
+`run_docker_container.sh` is a convenience utility provided by this example.
+It helps switch between automatic/manual mode.
+It can also add the GUI compose file when a display is available.
+
+In production, you do not need this script if your deployment flow is already fixed.
+You can run Docker Compose directly with the files you need, for example:
 
 ```bash
-docker compose -f dc_base.yaml -f dc_mode_automatic.yaml -f /tmp/dc_extra_env_ABC123.yaml logs -f
+IMG_ID=multi_sensor:jazzy docker compose --env-file ./deployment.env \
+  -f docker_compose_base.yaml \
+  -f docker_compose_mode_automatic.yaml \
+  up -d
 ```
 
-To scope logs to a single service, append the service name:
+Depending on your project, you may use one compose file, two files, or a different structure.
+
+## Deployment variables (`deployment.env`)
+
+`deployment.env` contains runtime values such as:
+
+- common scope values (`NAMESPACE`, `ROBOT_NAME`, `ROS_DOMAIN_ID`),
+- common logging values,
+- paths to sensor configuration files mounted by compose.
+
+`run_docker_container.sh` passes this file to Docker Compose with `--env-file`.
+You can provide a different environment file if you want different deployment profiles.
+
+In this example, using `deployment.env` is a convenience choice. It helps centralize shared values and switch deployment profiles quickly.
+
+In your own project, it is also valid not to use an env file.
+You can define values directly in each compose service, even if they are repeated.
+For example, you can repeat namespace/robot/domain values per service.
+That approach is equally correct and may simplify deployment, depending on your workflow.
+
+## Sensor configuration files
+
+Each sensor has its own configuration files:
+
+- UMX: params YAML selected with `UM_PARAMS_FILE` and model selected with `UM_MODEL`.
+- Livox Gen2: JSON + params YAML (`LIVOX_USER_CONFIG_FILE`, `LIVOX_PARAMS_FILE`).
+- RoboSense: YAML config (`ROBOSENSE_CONFIG_FILE`).
+
+These files are mounted by `docker_compose_base.yaml` and then consumed inside each sensor container.
+
+In this example, host paths for these files are provided through variables in `deployment.env`.
+Those variables are then used in Compose mounts.
+
+In your own project, you can skip that indirection.
+You can write host paths directly in each service mount in your compose file.
+That is also a valid approach and can simplify the workflow, depending on how much flexibility you need.
+
+This example intentionally shows a more complete pattern.
+You can see what is possible and keep only what fits your deployment.
+
+## Launch wrapper scripts (`run_launch_*`)
+
+The scripts:
+
+- `run_launch_umx.sh`
+- `run_launch_livox_gen2.sh`
+- `run_launch_robosense.sh`
+
+are used to map runtime environment values to launch-file arguments.
+They also run sensor-specific pre-processing before `ros2 launch`.
+
+Why this matters:
+
+- Some sensor configs include names related to URDF links or frame IDs.
+- In many systems those names must be prefixed with `<robot_name>_`.
+- `ROBOT_NAME` is runtime-configurable (environment variable), so the same configuration templates can be reused across different robots and projects.
+
+For that reason, wrappers compute `robot_prefix` dynamically from `ROBOT_NAME` and replace placeholders such as `{{robot_prefix}}` when present in sensor config files.
+
+This avoids hardcoding robot-specific names in sensor configuration files and keeps the same configuration templates reusable across multiple robot identities.
+
+If you prefer, you can still hardcode full names in your config files and maintain them manually.
+That is also valid, but then you must keep those names consistent with the robot name used at runtime.
+With that manual style, you might simplify or even remove parts of these wrapper scripts.
+
+This example provides the more general and programmatic approach on purpose. In many projects you can reuse these scripts almost as-is.
+
+In manual mode, `run_docker_container.sh` starts all sensor containers but leaves them running in `bash`.
+It does not launch sensors automatically.
+Then you connect to each container with `docker exec -it <container_name> bash` and run `/tmp/run_launch_in_terminal.sh`.
+This starts the corresponding sensor in that container.
+It also lets you inspect live console output per sensor, which is useful for debugging or for investigating failures seen in automatic mode.
+
+## Build and run
+
+Build image:
 
 ```bash
-docker compose -f dc_base.yaml -f dc_mode_automatic.yaml logs -f umx_imu_srvc
+python example_multi_sensor/build.py ubuntu:24.04 jazzy multi_sensor:jazzy
 ```
 
-And if you used `--env`, include the extra-env file:
+Run automatic mode:
 
 ```bash
-docker compose -f dc_base.yaml -f dc_mode_automatic.yaml -f /tmp/dc_extra_env_ABC123.yaml logs -f umx_imu_srvc
+cd example_multi_sensor
+./run_docker_container.sh multi_sensor:jazzy automatic
 ```
 
-Note: the final `-f` in `docker compose logs -f` means "follow" (stream logs).
-
-Example manual flow:
+Run manual mode:
 
 ```bash
-./exec_docker_compose.sh multi_sensor:jazzy manual
-docker compose ps
+./run_docker_container.sh multi_sensor:jazzy manual
+# Shows running services/containers and their names (useful before docker exec).
+IMG_ID=multi_sensor:jazzy docker compose --env-file ./deployment.env -f docker_compose_base.yaml -f docker_compose_mode_manual.yaml ps
+```
+
+Then enter a container and launch manually:
+
+```bash
 docker exec -it <container_name> bash
-/tmp/exec_manual_launch.sh
+/tmp/run_launch_in_terminal.sh
 ```
 
-Repeat the `docker exec` step for each service you want to run in manual mode.
+## Important: this is an example, not a constraint
 
-Passing extra environment variables:
+This layout is one valid way to structure a multi-sensor deployment.
 
-Use `--env KEY=VALUE` to inject additional environment variables into all services (for example discovery-related
-variables not covered by the explicit flags). When `--env` is used, the script writes a temporary extra-env file under
-`/tmp` (the path is printed) so you can reuse it for commands like `docker compose logs -f`.
-For per-service environment changes, edit `dc_base.yaml` or create your own Compose extra-env file.
-Use `--namespace`, `--robot-name`, `--ros-domain-id`, and `--rmw-implementation` to set common values across all services
-and replace the defaults defined in `dc_base.yaml`.
+You can change it freely, for example:
 
-```bash
-./exec_docker_compose.sh multi_sensor:jazzy automatic \
-  --env ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST \
-  --env ROS_STATIC_PEERS='192.168.0.1'
-```
+- avoid shared variable blocks and define everything per service,
+- use only one compose file,
+- use different environment files for different deployments,
+- reorganize services and scripts as needed.
 
-## Environment variables in `dc_base.yaml`
-
-Each service reads environment variables for its driver and maps them to launch arguments:
-
-UMX IMU:
-
-- `NAMESPACE`: optional namespace prefix.
-- `ROBOT_NAME`: required robot name used to build node names and frame prefixes.
-- `UM_MODEL`: required UM model (`6` or `7`). This example uses `7`.
-- `PARAMS_FILE`: path to the YAML params file mounted into the container.
-- `TOPIC_REMAPPINGS`: optional comma-separated remappings (`/from:=/to,/from2:=/to2`).
-- `NODE_OPTIONS`: comma-separated `key=value` list passed to the launch file.
-- `LOGGING_OPTIONS`: comma-separated `key=value` list passed to the launch file.
-
-Livox Gen2:
-
-- `NAMESPACE`: optional namespace prefix.
-- `ROBOT_NAME`: required robot name used to build node names and frame prefixes.
-- `CONFIG_FILE`: path to the JSON config file mounted into the container.
-- `PARAMS_FILE`: path to the YAML params file mounted into the container.
-- `TOPIC_REMAPPINGS`: optional comma-separated remappings (`/from:=/to,/from2:=/to2`).
-- `NODE_OPTIONS`: comma-separated `key=value` list passed to the launch file.
-- `LOGGING_OPTIONS`: comma-separated `key=value` list passed to the launch file.
-
-RoboSense:
-
-- `NAMESPACE`: optional namespace prefix.
-- `ROBOT_NAME`: required robot name used to build node names and frame prefixes.
-- `CONFIG_FILE`: path to the YAML config file mounted into the container.
-- `NODE_OPTIONS`: comma-separated `key=value` list passed to the launch file.
-- `LOGGING_OPTIONS`: comma-separated `key=value` list passed to the launch file.
-
-Shared:
-
-- `NAMESPACE`, `ROBOT_NAME`, `ROS_DOMAIN_ID`, `RMW_IMPLEMENTATION`: defaulted in `dc_base.yaml` and replaceable via
-  `exec_docker_compose.sh` flags.
-- `RCUTILS_LOGGING_BUFFERED_STREAM`: set to `0` for unbuffered console logging.
-- `RCUTILS_LOGGING_USE_STDOUT`: set to `1` to send logs to stdout.
-- `RCUTILS_COLORIZED_OUTPUT`: set to `1` to enable colorized output.
-- `RCUTILS_CONSOLE_OUTPUT_FORMAT`: printf-style format string for console logs.
-- `ROS_DOMAIN_ID`: ROS 2 domain isolation ID.
-- `RMW_IMPLEMENTATION`: selected middleware implementation (Zenoh by default).
-
-Placeholder logic in the Livox and RoboSense `exec_launch_file_*.sh` scripts:
-
-- If the Livox JSON file contains `{{robot_prefix}}`, the script generates a new JSON with `<robot_name>_` substituted
-  and updates `user_config_path` in the params file to point at it.
-- If the Livox JSON does not contain `{{robot_prefix}}`, the original JSON is used and `user_config_path` is only
-  updated when its current value differs from the JSON path.
-- If the RoboSense config contains `{{robot_prefix}}`, the script generates a new YAML with `<robot_name>_`
-  substituted; otherwise it uses the original config file.
-
-## Utility scripts and typical flow
-
-Scripts:
-
-- `exec_docker_compose.sh`: main entry point to run the multi-sensor example in automatic/manual mode.
-- `exec_launch_file_*.sh`: per-sensor launch scripts mounted into `/tmp/exec_launch_file.sh`.
-- `exec_manual_launch.sh`: calls `/tmp/exec_launch_file.sh` in manual mode.
-
-Typical flow:
-
-```text
-build.py -> exec_docker_compose.sh -> (automatic) /tmp/exec_launch_file.sh
-                                   -> (manual) docker exec + /tmp/exec_manual_launch.sh
-```
-
-## Troubleshooting
-
-- No data/topics: confirm the host can reach the sensor IPs and that the container uses `network_mode: host`.
-- Container starts but a driver exits: check the per-sensor config/params files and the placeholder logic.
-- IMU serial errors: verify `/dev/ttyUSB*` access and the `device_cgroup_rules` entry.
-- Container name mismatch: run `docker compose ps` to find the current container name before using `docker exec`.
+The purpose of this folder is to provide a clear, working reference that you can adapt.
+It is not a fixed rule set.
+In many real deployments, you will keep only a reduced subset of these files.
 
 ## References
 
-- `sensors/imus/umx/examples/README.md`
-- `sensors/lidars/livox_gen2/examples/README.md`
-- `sensors/lidars/robosense/examples/README.md`
+- `sensors/imus/umx/README.md`
+- `sensors/lidars/livox_gen2/README.md`
+- `sensors/lidars/robosense/README.md`
