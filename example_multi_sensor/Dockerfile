@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 
-ARG UBUNTU_VERSION=24.04
-FROM ubuntu:${UBUNTU_VERSION}
+ARG BASE_IMG=ubuntu:24.04
+FROM ${BASE_IMG}
 
 # The following labels adhere to the OCI Image Specification for standardized metadata.
 # Reference: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.title="Multi-sensor example image" \
-  org.opencontainers.image.description="Example Docker image to run ROS2 drivers for UMX IMU, Livox Gen2 LiDAR, and Robosense LiDAR" \
+LABEL org.opencontainers.image.title="Multi-sensor Docker image" \
+  org.opencontainers.image.description="A Docker image to run ROS2 sensor handlers" \
   org.opencontainers.image.authors="anon"
 
 ARG ROS_DISTRO=jazzy
@@ -23,25 +23,21 @@ WORKDIR /root
 
 SHELL ["/bin/bash", "-c"]
 
-# Avoid installing recommended and suggested packages.
-RUN tee /etc/apt/apt.conf.d/99norecommends.conf >/dev/null <<'EOF'
+# Avoid installing recommended and suggested packages when using 'apt-get install'.
+RUN tee /etc/apt/apt.conf.d/99norecommends.conf >/dev/null <<'EOF_NORECOMMENDS'
 APT::Install-Recommends "false";
 APT::Install-Suggests "false";
-EOF
+EOF_NORECOMMENDS
 
-# Minimal tooling to allow cloning the sensors repository.
-RUN --mount=type=bind,source=.,target=/tmp/context <<'EOF'
+RUN <<'EOF_SETUP'
 set -euo pipefail
-apt-get update
-apt-get install --yes --no-install-recommends ca-certificates git
-rm -rf /var/lib/apt/lists/*
 
 log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
+readonly sensor_images_repo_url="https://github.com/jfrascon/ros2_sensor_docker_images.git"
 
-repo_url="https://github.com/jfrascon/ros2_sensor_docker_images"
-log "Cloning sensors repository '${repo_url}' into /tmp/sensor_images"
-rm -rf /tmp/sensor_images
-git clone "${repo_url}" /tmp/sensor_images
+# Optionally set a branch or tag from the sensor repository.
+# If left blank, the repository default branch is used.
+readonly sensor_images_repo_ref=""
 
 # Checks.
 [ -z "${ROS_DISTRO}" ] && {
@@ -64,38 +60,61 @@ git clone "${repo_url}" /tmp/sensor_images
   exit 1
 }
 
-base_dir="/tmp/sensor_images/base_docker_files"
+# Clone the sensors repository to mimic the workflow users will apply in their own projects:
+# clone once, then reuse setup/compile/launch helper files from each sensor directory.
+log "Installing prerequisites required to clone '${sensor_images_repo_url}'"
+apt-get update
+apt-get install --yes --no-install-recommends ca-certificates git
+rm -rf /var/lib/apt/lists/*
 
-[ ! -s "${base_dir}/install_base_system.sh" ] && {
-  log "Error: Missing 'install_base_system.sh' in ${base_dir}" >&2
-  exit 1
-}
+sensor_images_dir="/tmp/sensor_images"
+rm -rf "${sensor_images_dir}"
 
-[ ! -s "${base_dir}/install_ros.sh" ] && {
-  log "Error: Missing 'install_ros.sh' in ${base_dir}" >&2
-  exit 1
-}
+if [ -n "${sensor_images_repo_ref}" ]; then
+  log "Cloning sensor repository '${sensor_images_repo_url}' (ref '${sensor_images_repo_ref}') into '${sensor_images_dir}'"
+  git clone --depth 1 --branch "${sensor_images_repo_ref}" "${sensor_images_repo_url}" "${sensor_images_dir}"
+else
+  log "Cloning sensor repository '${sensor_images_repo_url}' (default branch) into '${sensor_images_dir}'"
+  git clone --depth 1 "${sensor_images_repo_url}" "${sensor_images_dir}"
+fi
 
-[ ! -s "${base_dir}/rosdep_init_update_install.sh" ] && {
-  log "Error: Missing 'rosdep_init_update_install.sh' in ${base_dir}" >&2
-  exit 1
-}
+base_dir="${sensor_images_dir}/base_docker_files"
+umx_dir="${sensor_images_dir}/sensors/imus/umx"
+livox_gen2_dir="${sensor_images_dir}/sensors/lidars/livox_gen2"
+robosense_dir="${sensor_images_dir}/sensors/lidars/robosense"
 
-[ ! -s "${base_dir}/colcon_mixin_metadata.sh" ] && {
-  log "Error: Missing 'colcon_mixin_metadata.sh' in ${base_dir}" >&2
-  exit 1
-}
+required_files=(
+  "${base_dir}/install_base_system.sh"
+  "${base_dir}/install_ros.sh"
+  "${base_dir}/rosdep_init_update_install.sh"
+  "${base_dir}/colcon_mixin_metadata.sh"
+  "${base_dir}/entrypoint.sh"
+  "${umx_dir}/setup.sh"
+  "${umx_dir}/compile.sh"
+  "${umx_dir}/eut_sensor.launch.py"
+  "${umx_dir}/examples/refs.txt"
+  "${livox_gen2_dir}/setup.sh"
+  "${livox_gen2_dir}/compile.sh"
+  "${livox_gen2_dir}/eut_sensor.launch.py"
+  "${livox_gen2_dir}/examples/refs.txt"
+  "${robosense_dir}/setup.sh"
+  "${robosense_dir}/compile.sh"
+  "${robosense_dir}/eut_sensor.launch.py"
+  "${robosense_dir}/examples/refs.txt"
+)
 
-[ ! -s "${base_dir}/entrypoint.sh" ] && {
-  log "Error: Missing 'entrypoint.sh' in ${base_dir}" >&2
-  exit 1
-}
+for file in "${required_files[@]}"; do
+  if [ ! -f "${file}" ]; then
+    log "Error: Missing '${file}' in cloned repository '${sensor_images_dir}'" >&2
+    exit 1
+  fi
+done
 
-# --------------------------------------------------------------------------------------
-# BASE SYSTEM installation
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Base system installation
+# ------------------------------------------------------------------------------
 
-# By using bash it does not matter if the script has or not the execution permission.
+# By using the command 'bash' explicitly it does not matter if the script has or not the execution permission.
 bash "${base_dir}/install_base_system.sh" "${IMAGE_MAIN_USER}" || {
     log "Error: Failed to run 'install_base_system.sh'" 1>&2
     exit 1
@@ -112,23 +131,22 @@ if [ "${image_main_user_home}" != "/home/${IMAGE_MAIN_USER}" ]; then
   exit 1
 fi
 
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # ROS installation
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 bash "${base_dir}/install_ros.sh" "${ROS_DISTRO}" "${ROS_VERSION}" || {
     log "Error: Failed to run 'install_ros.sh'" 1>&2
     exit 1
 }
 
+# Configure rosdep to avoid installing certain DDS packages which are not needed.
 etc_rosdep_dir="/etc/ros/rosdep"
 etc_rosdep_sources_dir="${etc_rosdep_dir}/sources.list.d"
 mkdir --verbose --parent "${etc_rosdep_sources_dir}"
 
-# File where rosdep keys to skip are saved.
 rosdep_ignored_keys_file="${etc_rosdep_dir}/rosdep_ignored_keys.yaml"
 
-# Initial rosdep keys to skip.
 rosdep_ignored_keys=(
 "rmw_connextdds: {ubuntu: []}"
 "rmw_connextdds_common: {ubuntu: []}"
@@ -142,50 +160,36 @@ for key in "${rosdep_ignored_keys[@]}"; do
     log "Added rosdep key to ignore, '${key}', to file '${rosdep_ignored_keys_file}'"
 done
 
-# Index file listing the files with rosdep keys to skip, and read by rosdep.
-# In this case we have opted to save all the keys to skip in a single file, '${rosdep_ignored_keys_file}'.
-# Therefore, a line 'yaml file://${rosdep_ignored_keys_file}' must be added, if not already present, to the index file.
-# Note, it does not matter if the file "${rosdep_ignored_keys_file}" does not exist when executing 'rosdep install ...'
 rosdep_ignored_keys_index_file="${etc_rosdep_sources_dir}/00-rosdep-ignored-keys.list"
 line="yaml file://${rosdep_ignored_keys_file}"
 echo "${line}" >>"${rosdep_ignored_keys_index_file}"
 log "Added line '${line}' to file '${rosdep_ignored_keys_index_file}'"
 
-# --------------------------------------------------------------------------------------
-# Sensor installation
-# --------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# Sensor setup
+# ------------------------------------------------------------------------------
 
-log "Executing install scripts for multi-sensor image"
+log "Executing sensor setup scripts from cloned repository"
 
-# Path to the directory where the repositories will be cloned.
 pkgs_dir="${IMAGE_MAIN_USER_WORKSPACE}/src"
 mkdir --verbose --parent "${pkgs_dir}"
 
-repo_dir="/tmp/sensor_images"
-umx_dir="${repo_dir}/sensors/imus/umx"
-livox_gen2_dir="${repo_dir}/sensors/lidars/livox_gen2"
-robosense_dir="${repo_dir}/sensors/lidars/robosense"
-
-sensors=(
-  "UMX IMU:${umx_dir}"
-  "Livox Gen2 LiDAR:${livox_gen2_dir}"
-  "Robosense LiDAR:${robosense_dir}"
+setup_steps=(
+  "UMX IMU:${umx_dir}/setup.sh:${umx_dir}/examples/refs.txt"
+  "Livox Gen2 LiDAR:${livox_gen2_dir}/setup.sh:${livox_gen2_dir}/examples/refs.txt"
+  "RoboSense LiDAR:${robosense_dir}/setup.sh:${robosense_dir}/examples/refs.txt"
 )
 
-for sensor in "${sensors[@]}"; do
-  sensor_name="${sensor%%:*}"
-  sensor_dir="${sensor#*:}"
-
-  [ ! -s "${sensor_dir}/install.sh" ] && {
-    log "Error: Missing 'install.sh' in ${sensor_dir}" >&2
-    exit 1
+for step in "${setup_steps[@]}"; do
+  IFS=':' read -r sensor_name setup_script refs_file <<< "${step}"
+  log "Running setup for ${sensor_name}"
+  bash "${setup_script}" "${pkgs_dir}" "${refs_file}" || {
+      log "Error: Failed setup for ${sensor_name}" 1>&2
+      exit 1
   }
-
-  log "Installing ${sensor_name} driver"
-  bash "${sensor_dir}/install.sh" "${pkgs_dir}"
 done
 
-# -------------------------------------------- End of sensor installation ----------------------------------------------
+# -------------------------------------------- End of sensor setup ----------------------------------------------
 
 rosdep_args=("${ROS_DISTRO}" "${IMAGE_MAIN_USER}" --pkgs-dir "${pkgs_dir}")
 bash "${base_dir}/rosdep_init_update_install.sh" "${rosdep_args[@]}" || {
@@ -201,7 +205,7 @@ bash "${base_dir}/colcon_mixin_metadata.sh" "${IMAGE_MAIN_USER}" || {
 log "Installing entrypoint script to /usr/local/bin/entrypoint.sh"
 install -D -m 0755 "${base_dir}/entrypoint.sh" /usr/local/bin/entrypoint.sh
 
-# Set ownership of the user´s home directory and workspace.
+# Set ownership of the user's home directory and workspace.
 log "Setting ownership of path '${image_main_user_home}' to user '${IMAGE_MAIN_USER}' (UID '${image_main_user_id}') and primary group '${image_main_user_pri_group}' (GID '${image_main_user_pri_group_id}')"
 chown --recursive "${IMAGE_MAIN_USER}":"${image_main_user_pri_group}" "${image_main_user_home}"
 
@@ -210,12 +214,13 @@ apt-get autoclean
 apt-get autoremove --purge -y
 apt-get clean
 rm -rf /var/lib/apt/lists/*  &>/dev/null
-EOF
+EOF_SETUP
 
 USER "${IMAGE_MAIN_USER}"
 WORKDIR "/home/${IMAGE_MAIN_USER}"
 
-RUN --mount=type=bind,source=.,target=/tmp/context <<'EOF'
+RUN <<'EOF_COMPILE'
+set -euo pipefail
 
 log() { echo "[$(date --utc '+%Y-%m-%d_%H-%M-%S')]" "$@"; }
 
@@ -224,37 +229,28 @@ source /opt/ros/${ROS_DISTRO}/setup.bash || {
   exit 1
 }
 
+sensor_images_dir="/tmp/sensor_images"
+umx_dir="${sensor_images_dir}/sensors/imus/umx"
+livox_gen2_dir="${sensor_images_dir}/sensors/lidars/livox_gen2"
+robosense_dir="${sensor_images_dir}/sensors/lidars/robosense"
 pkgs_dir="${IMAGE_MAIN_USER_WORKSPACE}/src"
 
-log "Compiling packages for multi-sensor image"
-
-repo_dir="/tmp/sensor_images"
-umx_dir="${repo_dir}/sensors/imus/umx"
-livox_gen2_dir="${repo_dir}/sensors/lidars/livox_gen2"
-robosense_dir="${repo_dir}/sensors/lidars/robosense"
-
-compile_sensors=(
-  "UMX IMU:${umx_dir}"
-  "Livox Gen2 LiDAR:${livox_gen2_dir}"
-  "Robosense LiDAR:${robosense_dir}"
+compile_steps=(
+  "UMX IMU:${umx_dir}/compile.sh"
+  "Livox Gen2 LiDAR:${livox_gen2_dir}/compile.sh"
+  "RoboSense LiDAR:${robosense_dir}/compile.sh"
 )
 
-for sensor in "${compile_sensors[@]}"; do
-  sensor_name="${sensor%%:*}"
-  sensor_dir="${sensor#*:}"
-
-  [ ! -s "${sensor_dir}/compile.sh" ] && {
-    log "Error: Missing 'compile.sh' in ${sensor_dir}" >&2
-    exit 1
-  }
-
-  log "Compiling ${sensor_name} packages"
-  bash "${sensor_dir}/compile.sh" --symlink-install "${pkgs_dir}" || {
-    log "Error: Failed to compile ${sensor_name}" >&2
-    exit 1
+log "Executing sensor compile scripts from cloned repository"
+for step in "${compile_steps[@]}"; do
+  IFS=':' read -r sensor_name compile_script <<< "${step}"
+  log "Compiling ${sensor_name}"
+  bash "${compile_script}" --symlink-install "${pkgs_dir}" || {
+      log "Error: Failed compile for ${sensor_name}" >&2
+      exit 1
   }
 done
-EOF
+EOF_COMPILE
 
 # Configure timezone and localization settings.
 # - TZ: Set the timezone to UTC to ensure consistent time handling across environments.
@@ -268,5 +264,6 @@ ENV TZ="Etc/UTC" \
   ROS_LOG_DIR="/home/${IMAGE_MAIN_USER}/.ros/log" \
   ROS_TEST_RESULTS_DIR="/home/${IMAGE_MAIN_USER}/.ros/tests" \
   ROS_CONFIG_HOME="/home/${IMAGE_MAIN_USER}/.config/ros.org"
+
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["bash"]

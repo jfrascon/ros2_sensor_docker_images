@@ -1,0 +1,21 @@
+services:
+  umx_srvc:
+    volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+
+  livox_gen2_srvc:
+    volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+
+  robosense_srvc:
+    volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro

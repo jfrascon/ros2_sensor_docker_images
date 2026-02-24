@@ -1,0 +1,95 @@
+# ------------------------------------------------------------------------------
+# ANCHORS
+# ------------------------------------------------------------------------------
+
+# Anchor with common environment variables reused by all services.
+# Reference: https://docs.docker.com/reference/compose-file/fragments/
+x-common-environment: &common-environment
+  NAMESPACE: ${NAMESPACE}
+  ROBOT_NAME: ${ROBOT_NAME}
+  ROS_DOMAIN_ID: ${ROS_DOMAIN_ID}
+  # If DISPLAY is not defined on the host (e.g. headless machine), this expands to an empty value and is not an error.
+  DISPLAY: ${DISPLAY:-}
+  QT_X11_NO_MITSHM: "1"
+  TERM: xterm-256color
+  RCUTILS_LOGGING_BUFFERED_STREAM: ${RCUTILS_LOGGING_BUFFERED_STREAM}
+  RCUTILS_LOGGING_USE_STDOUT: ${RCUTILS_LOGGING_USE_STDOUT}
+  RCUTILS_COLORIZED_OUTPUT: ${RCUTILS_COLORIZED_OUTPUT}
+  RCUTILS_CONSOLE_OUTPUT_FORMAT: ${RCUTILS_CONSOLE_OUTPUT_FORMAT}
+  RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+  CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
+  # Optional ROS discovery variables:
+  # Uncomment these lines here and set/uncomment the matching keys in deployment.env (or your custom --env-file).
+  # ROS_LOCALHOST_ONLY: ${ROS_LOCALHOST_ONLY}
+  # ROS_AUTOMATIC_DISCOVERY_RANGE: ${ROS_AUTOMATIC_DISCOVERY_RANGE}
+  # ROS_STATIC_PEERS: ${ROS_STATIC_PEERS}
+
+# ------------------------------------------------------------------------------
+# SERVICES
+# ------------------------------------------------------------------------------
+
+services:
+  umx_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    ipc: host
+    volumes:
+      - /dev:/dev # to access serial devices (e.g., /dev/ttyUSB*)
+      # Why map /run/udev from host into the container?
+      # - udev runs on the HOST and stores a volatile database of device properties/states under /run/udev.
+      # - Mounting it read-only lets tools and libraries inside the container read udev attributes (IDs, symlinks,
+      #   tags) so their view matches the host.
+      # - It improves detection/consistency when dealing with hotplug. Note: udev events do NOT propagate into
+      #   the container; this mount is only for reading metadata/state.
+      - /run/udev:/run/udev:ro
+      - /etc/udev/rules.d:/etc/udev/rules.d:ro
+      - ${UM_PARAMS_FILE}:/tmp/params.yaml:ro
+      - ./run_launch_umx.sh:/tmp/run_launch.sh:ro
+      - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+    device_cgroup_rules:
+      - "c 188:* rwm" # 188 is ttyUSB devices
+    # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
+    environment:
+      <<: *common-environment
+      PARAMS_FILE: /tmp/params.yaml
+      UM_MODEL: ${UM_MODEL}
+      TOPIC_REMAPPINGS: imu/data:=umx/data,imu/mag:=umx/mag,imu/rpy:=umx/rpy,imu/temperature:=umx/temperature,imu/reset:=umx/reset
+      NODE_OPTIONS: name=umx_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0
+      LOGGING_OPTIONS: log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true
+
+  livox_gen2_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    ipc: host
+    volumes:
+      # Livox JSON and params files are selected through env-file variables.
+      # user_config_path in the mounted params file must point to /tmp/user_config.json.
+      - ${LIVOX_USER_CONFIG_FILE}:/tmp/user_config.json:ro
+      - ${LIVOX_PARAMS_FILE}:/tmp/params.yaml:ro
+      - ./run_launch_livox_gen2.sh:/tmp/run_launch.sh:ro
+      - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+    # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
+    environment:
+      <<: *common-environment
+      PARAMS_FILE: /tmp/params.yaml
+      TOPIC_REMAPPINGS: ""
+      NODE_OPTIONS: name=livox_gen2_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0
+      LOGGING_OPTIONS: log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true
+
+  robosense_srvc:
+    image: ${IMG_ID}
+    network_mode: host
+    privileged: false
+    ipc: host
+    volumes:
+      - ${ROBOSENSE_CONFIG_FILE}:/tmp/config.yaml:ro
+      - ./run_launch_robosense.sh:/tmp/run_launch.sh:ro
+      - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+    # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
+    environment:
+      <<: *common-environment
+      CONFIG_FILE: /tmp/config.yaml
+      NODE_OPTIONS: name=robosense_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0
+      LOGGING_OPTIONS: log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true
