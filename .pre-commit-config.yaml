@@ -12,6 +12,10 @@
 #
 # See https://github.com/pre-commit/pre-commit
 
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
 repos:
   # Standard hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -35,7 +39,7 @@ repos:
   # Ruff replaces both Black (formatter) and isort (import sorting)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Find the latest version from https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.2
+    rev: v0.15.2
     hooks:
       # Run the linter and automatically fix any safe issues.
       - id: ruff
@@ -46,7 +50,7 @@ repos:
 
   # CPP hooks
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.2
+    rev: v21.1.8
     hooks:
       - id: clang-format
         files: \.(cpp|hpp|c|h)$
@@ -57,3 +61,11 @@ repos:
     hooks:
       - id: shfmt
         args: [-w, -s, -i=4]
+
+  # Conventional Commits validation (commit message hook)
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: []
