@@ -75,7 +75,7 @@ while IFS= read -r line || [ -n "${line}" ]; do
     line_number=$((line_number + 1))
     trimmed_line="${line#"${line%%[![:space:]]*}"}"
 
-    if [ -z "${trimmed_line}" ] || [[ "${trimmed_line}" == \#* ]]; then
+    if [ -z "${trimmed_line}" ] || [[ ${trimmed_line} == \#* ]]; then
         continue
     fi
 
@@ -191,20 +191,20 @@ if [ -d "${local_rslidar_sdk_repo}/src/rs_driver/.git" ]; then
 fi
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Installing launch file eut_sensor.launch.py in rslidar_sdk package.
+# Installing launch file sensor.launch.py in rslidar_sdk package.
 # ----------------------------------------------------------------------------------------------------------------------
 
-if [ ! -s "${script_dir}/eut_sensor.launch.py" ]; then
-    log "ERROR: Missing file '${script_dir}/eut_sensor.launch.py'" >&2
+if [ ! -s "${script_dir}/sensor.launch.py" ]; then
+    log "ERROR: Missing file '${script_dir}/sensor.launch.py'" >&2
     exit 1
 fi
 
-if [ -f "${local_rslidar_sdk_repo}/launch/eut_sensor.launch.py" ]; then
-    rm -f "${local_rslidar_sdk_repo}/launch/eut_sensor.launch.py"
+if [ -f "${local_rslidar_sdk_repo}/launch/sensor.launch.py" ]; then
+    rm -f "${local_rslidar_sdk_repo}/launch/sensor.launch.py"
 fi
 
-log "Placing the file 'eut_sensor.launch.py' into '${local_rslidar_sdk_repo}/launch/eut_sensor.launch.py'"
-install -m 0755 "${script_dir}/eut_sensor.launch.py" "${local_rslidar_sdk_repo}/launch/eut_sensor.launch.py"
+log "Placing the file 'sensor.launch.py' into '${local_rslidar_sdk_repo}/launch/sensor.launch.py'"
+install -m 0755 "${script_dir}/sensor.launch.py" "${local_rslidar_sdk_repo}/launch/sensor.launch.py"
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Cloning the 'rslidar_msg' package.
