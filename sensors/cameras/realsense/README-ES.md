@@ -7,7 +7,7 @@ Repositorios oficiales:
 - Paquetes ROS2 RealSense: `https://github.com/realsenseai/realsense-ros`
 - Libreria librealsense2: `https://github.com/realsenseai/librealsense`
 
-Los scripts `setup.sh`, `install_librealsense2_from_source.sh` y `compile.sh` están diseñados para ser usados desde un `Dockerfile` y automatizar la construcción de la imagen.
+Los scripts `setup.sh`, `install_librealsense2_from_source.sh`, `compile.sh` y `sensor.launch.py` están diseñados para ser usados desde un `Dockerfile` y automatizar la construcción de la imagen.
 
 La guía [how_to_patch_the_kernel_and_install_librealsense2_in_host_operating_system.md](how_to_patch_the_kernel_and_install_librealsense2_in_host_operating_system.md) resume las opciones de instalación de `librealsense2` y ofrece criterios prácticos para escoger la más adecuada según el entorno y el caso de uso.
 
@@ -97,6 +97,15 @@ Una vez construida la imagen con `examples/build.py`, puedes levantar el contene
 - Modo `automatic`: el contenedor arranca y ejecuta automáticamente el launch del driver ROS2.
 - Modo `manual`: el contenedor arranca sin lanzar el driver, para que puedas entrar por terminal y ejecutarlo manualmente.
 
+Nota sobre el alcance de estos ficheros de ejemplo:
+- `run_docker_container.sh` y los compose fragmentados (`docker_compose_mode_automatic.yaml`, `docker_compose_mode_manual.yaml`, `docker_compose_gui.yaml`) están orientados a facilitar pruebas y experimentación.
+- En un despliegue de producción, lo habitual es definir un único `docker compose` propio con la configuración de la cámara, el comando de arranque y, si aplica, la parte de GUI.
+- En ese caso no es necesario usar `run_docker_container.sh` ni separar la configuración en modos `automatic/manual/gui`.
+
+El script solo recibe argumentos posicionales:
+- `<img_id>`
+- `<mode>` (`automatic` o `manual`)
+
 Ejemplo (si has construido con `./build.py humble`, el `img_id` por defecto es `realsense:humble`):
 
 ```bash
@@ -110,68 +119,59 @@ Si prefieres modo manual:
 cd sensors/cameras/realsense/examples
 ./run_docker_container.sh realsense:humble manual
 docker compose exec -it realsense_srvc bash
-bash /tmp/run_launch_in_terminal.sh
+ros2 launch realsense2_camera sensor.launch.py
 ```
 
-Este ejemplo también está preparado para ejecutar aplicaciones gráficas desde el contenedor (por ejemplo `rviz2` y `realsense-viewer`) y mostrarlas en el host mediante X11/XWayland. Ten en cuenta que `realsense-viewer` sólo estará disponible si `librealsense2` se compiló con `BUILD_EXAMPLES=ON` y `BUILD_GRAPHICAL_EXAMPLES=ON`.
+El flujo de GUI es automático:
+- Si `DISPLAY` está definido en el host, `run_docker_container.sh` añade `docker_compose_gui.yaml` y ejecuta `xhost +local:`.
+- Si `DISPLAY` no está definido, el contenedor arranca en modo headless (sin montaje de X11).
 
-El script `run_docker_container.sh` permite configurar variables mediante `--env KEY=VALUE`.
+Este ejemplo está preparado para ejecutar aplicaciones gráficas desde el contenedor (por ejemplo `rviz2` y `realsense-viewer`) y mostrarlas en el host mediante X11/XWayland. Ten en cuenta que `realsense-viewer` sólo estará disponible si `librealsense2` se compiló con `BUILD_EXAMPLES=ON` y `BUILD_GRAPHICAL_EXAMPLES=ON`.
 
-Variables con valor por defecto en este ejemplo:
+Las variables de entorno de ejecución se configuran en `examples/docker_compose_base.yaml`, sección `environment`.
+En particular, `sensor.launch.py` usa:
 
-- `NAMESPACE` (por defecto: vacío)
-- `ROBOT_NAME` (por defecto: `robot`)
-- `ROS_DOMAIN_ID` (por defecto: `11`)
-- `NODE_OPTIONS` (por defecto: `name=realsense_camera,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
-- `LOGGING_OPTIONS` (por defecto: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
+- `ROBOT_NAME` (obligatoria para el launch)
+- `PARAMS_FILE` (obligatoria para el launch; fijada a `/tmp/params.yaml` en compose)
+- `NAMESPACE` (opcional)
+- `TOPIC_REMAPPINGS` (opcional, string de remapeo `OLD:=NEW,OLD:=NEW,...`)
+- `NODE_OPTIONS` (opcional, formato `kvs`: `key=value,key=value,...`)
+- `LOGGING_OPTIONS` (opcional, formato `kvs`: `key=value,key=value,...`)
 
-Las variables `NODE_OPTIONS` y `LOGGING_OPTIONS` son de tipo `kvs` (key-value-string), es decir, un string formado por pares `key=value` separados por comas.
+Otras variables usadas en este ejemplo:
+- `ROS_DOMAIN_ID`
+- `RMW_IMPLEMENTATION` (fijada a `rmw_cyclonedds_cpp`)
+- `CYCLONEDDS_URI` (fijada a `examples/cyclonedds_config.xml`)
 
-Variables adicionales soportadas por el script:
-
-- `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble y anteriores, sin valor por defecto)
-- `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy y posteriores, sin valor por defecto)
-- `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy y posteriores, sin valor por defecto)
-- `TOPIC_REMAPPINGS`: string de remapeos en formato `OLD:=NEW`, con pares separados por comas.
-
-En este ejemplo, los tópicos definidos por el nodo en su código fuente son privados (usan `~`). Por ello, si quieres remapear uno de esos tópicos, debes usar la ruta completa en el lado izquierdo. En el lado derecho, el uso de `~` es opcional:
+Los tópicos definidos por el nodo en su código fuente son privados (usan `~`). Por ello, si quieres remapear uno de esos tópicos, debes usar la ruta completa en el lado izquierdo. En el lado derecho, el uso de `~` es opcional. Si usas `~` en el lado derecho, el remapeo incluirá el nombre del nodo, es decir, `<NAMESPACE>/<ROBOT_NAME>/<NODE_NAME>/<NEW_TOPIC>`. Si no usas `~` en el lado derecho, y el nuevo tópico no empieza con `/`, el remapeo se resolverá como `<NAMESPACE>/<ROBOT_NAME>/<NEW_TOPIC>`. Si el nuevo tópico empieza con `/`, se mantendrá como está (remapeo global).
 
 `<NAMESPACE>/<ROBOT_NAME>/<NODE_NAME>/<OLD_TOPIC>:=~/<NEW_TOPIC>`
 
-Ejemplo:
+Ejemplo en `docker_compose_base.yaml`:
 
-`--env NAMESPACE=test --env ROBOT_NAME=myrobot --env NODE_OPTIONS="name=realsense_camera" --env TOPIC_REMAPPINGS="/test/myrobot/realsense_camera/color/camera_info:=~/color/ci"`
+```yaml
+TOPIC_REMAPPINGS: "/test/myrobot/realsense_camera/color/camera_info:=~/color/ci"
+```
 
 Con ese ejemplo, el nuevo nombre completo del tópico es `/test/myrobot/realsense_camera/color/ci`.
 
-Dado que por defecto (si no usas `TOPIC_REMAPPINGS`) los tópicos son privados y por tanto incluyen el nombre del nodo, lo recomendable, en este caso, es usar como nombre de nodo el nombre del dispositivo/cámara (por ejemplo `front_camera`, `rear_camera`, etc.) y evitar sufijos como `_node`, ya que ese sufijo aparecerá también en los nombres de los tópicos. Recuerda que el nombre del nodo se define en `NODE_OPTIONS`, con la clave `name`. En la jerarquía de tópicos, suele aportar más valor identificar el dispositivo que produce la información que el nombre técnico del nodo que lo ejecuta; la idea es que el nombre del tópico describa el origen físico del dato (la cámara), no el detalle de implementación (el nodo).
+Dado que por defecto (si no usas `TOPIC_REMAPPINGS`) los tópicos son privados y por tanto incluyen el nombre del nodo, lo recomendable es usar como nombre de nodo el nombre del dispositivo/cámara (por ejemplo `front_camera`, `rear_camera`, etc.) y evitar sufijos como `_node`, ya que ese sufijo aparecerá también en los nombres de los tópicos. Recuerda que el nombre del nodo se define en `NODE_OPTIONS`, con la clave `name`.
 
-Si usas `TOPIC_REMAPPINGS`, puedes usar como nombre de nodo el que consideres oportuno, incluso con sufijo `_node` (por ejemplo `front_camera_node`), siempre que en el remapeo apliques la regla anterior y expongas tópicos con nombres centrados en la cámara/dispositivo.
+Si usas `TOPIC_REMAPPINGS`, puedes usar como nombre de nodo el que consideres oportuno, incluso con sufijo `_node` (por ejemplo `front_camera_node`), siempre que en el remapeo expongas tópicos con nombres centrados en la cámara/dispositivo.
 
-Ejemplo:
+Ejemplo en `docker_compose_base.yaml`:
 
-`--env NAMESPACE=test --env ROBOT_NAME=myrobot --env NODE_OPTIONS="name=realsense_camera_node" --env TOPIC_REMAPPINGS="/test/myrobot/realsense_camera_node/color/camera_info:=/test/myrobot/realsense_camera/color/camera_info"`
-
-Hay variables que no se pueden configurar con `--env` en este flujo:
-
-- `RMW_IMPLEMENTATION`: está fijada en `docker_compose_base.yaml` con `rmw_cyclonedds_cpp`. Este ejemplo usa CycloneDDS como middleware DDS. Si quieres cambiar de middleware, debes editar `docker_compose_base.yaml`.
-- `CYCLONEDDS_URI`: está fijada en `docker_compose_base.yaml`.
-- `PARAMS_FILE`: está fijada en `docker_compose_base.yaml`. Indica la ruta del fichero YAML con los parámetros de la cámara.
-- `IMG_ID`: se toma del argumento posicional `<img_id>` del script. Identifica la imagen Docker que se va a ejecutar.
-- `ENV_FILE`: lo gestiona internamente el propio script. Es el fichero temporal `.env` que `docker compose` carga mediante `env_file` (en `docker_compose_base.yaml`) para pasar variables de entorno al contenedor del servicio `realsense_srvc`.
-
-La configuración de CycloneDDS usada en el ejemplo se define en el fichero `examples/cyclonedds_config.xml`. El middleware la carga mediante la variable `CYCLONEDDS_URI`, definida en `docker_compose_base.yaml`.
-
-La configuración de parámetros de la cámara se define en el fichero `examples/realsense_params.yaml`. Si quieres cambiar perfiles, streams, `frame_id` o cualquier parámetro del nodo de `realsense2_camera`, edita ese fichero.
-
-Ejemplo de ejecución con overrides:
-
-```bash
-./run_docker_container.sh realsense:humble automatic \
-  --env ROBOT_NAME=robot1 \
-  --env ROS_DOMAIN_ID=21 \
-  --env ROS_LOCALHOST_ONLY=1
+```yaml
+NODE_OPTIONS: "name=realsense_camera_node,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+TOPIC_REMAPPINGS: "/test/myrobot/realsense_camera_node/color/camera_info:=/test/myrobot/realsense_camera/color/camera_info"
 ```
+
+Puedes fijar ese remapeo editando `TOPIC_REMAPPINGS` en `docker_compose_base.yaml`.
+
+La configuración de CycloneDDS usada en el ejemplo se define en `examples/cyclonedds_config.xml`.
+
+La configuración de parámetros de la cámara se define en `examples/realsense_params.yaml`.
+Ese fichero puede usar `$(var robot_prefix)` (por ejemplo en `camera_name`), y `sensor.launch.py` lo resuelve estableciendo `robot_prefix` en el contexto de ROS2 launch antes de arrancar el nodo.
 
 Para ver todas las opciones disponibles:
 
