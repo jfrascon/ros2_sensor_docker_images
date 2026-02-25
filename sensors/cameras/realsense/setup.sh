@@ -165,7 +165,7 @@ while IFS= read -r line || [ -n "${line}" ]; do
     trimmed_line="${line#"${line%%[![:space:]]*}"}"
 
     # Skip blank lines and comment lines (a comment is any line whose first non-space character is '#').
-    if [ -z "${trimmed_line}" ] || [[ "${trimmed_line}" == \#* ]]; then
+    if [ -z "${trimmed_line}" ] || [[ ${trimmed_line} == \#* ]]; then
         continue
     fi
 
@@ -312,18 +312,18 @@ if [ -n "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ]; then
         trimmed_line="${trimmed_line%"${trimmed_line##*[![:space:]]}"}"
 
         # Ignore empty lines and comments to keep the flags file human-friendly.
-        if [ -z "${trimmed_line}" ] || [[ "${trimmed_line}" == \#* ]]; then
+        if [ -z "${trimmed_line}" ] || [[ ${trimmed_line} == \#* ]]; then
             continue
         fi
 
         # Require NAME=VALUE shape before splitting.
-        if [[ "${trimmed_line}" != *=* ]]; then
+        if [[ ${trimmed_line} != *=* ]]; then
             log "ERROR: Invalid flag at line ${line_number} in ${LIBREALSENSE2_COMPILE_FLAGS_FILE}. Expected NAME=VALUE" >&2
             exit 2
         fi
 
         # Enforce input convention: no '-D' prefix in the flags file.
-        if [[ "${trimmed_line}" == -D* ]]; then
+        if [[ ${trimmed_line} == -D* ]]; then
             log "ERROR: Invalid flag at line ${line_number} in ${LIBREALSENSE2_COMPILE_FLAGS_FILE}. Do not use '-D', use NAME=VALUE" >&2
             exit 2
         fi
@@ -341,7 +341,7 @@ if [ -n "${LIBREALSENSE2_COMPILE_FLAGS_FILE}" ]; then
         fi
 
         # CMake variable names use letters/digits/underscores and cannot start with a digit.
-        if [[ ! "${opt_name}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+        if [[ ! ${opt_name} =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
             log "ERROR: Invalid CMake option name '${opt_name}' at line ${line_number} in ${LIBREALSENSE2_COMPILE_FLAGS_FILE}" >&2
             exit 2
         fi
@@ -380,16 +380,16 @@ trap - ERR
 cleanup_librealsense2_tmp_dir
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Installing launch file eut_sensor.launch.py
+# Installing launch file sensor.launch.py
 # ----------------------------------------------------------------------------------------------------------------------
 
-if [ ! -f "${script_dir}/eut_sensor.launch.py" ]; then
-    log "ERROR: Missing required launch file: ${script_dir}/eut_sensor.launch.py" >&2
+if [ ! -f "${script_dir}/sensor.launch.py" ]; then
+    log "ERROR: Missing required launch file: ${script_dir}/sensor.launch.py" >&2
     exit 1
 fi
 
-log "Placing eut_sensor.launch.py into ${realsense_ros_dst}/realsense2_camera/launch/eut_sensor.launch.py"
-install -m 0755 "${script_dir}/eut_sensor.launch.py" "${realsense_ros_dst}/realsense2_camera/launch/eut_sensor.launch.py"
+log "Placing sensor.launch.py into ${realsense_ros_dst}/realsense2_camera/launch/sensor.launch.py"
+install -m 0755 "${script_dir}/sensor.launch.py" "${realsense_ros_dst}/realsense2_camera/launch/sensor.launch.py"
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Write rosdep keys to ignore during 'rosdep install'.
