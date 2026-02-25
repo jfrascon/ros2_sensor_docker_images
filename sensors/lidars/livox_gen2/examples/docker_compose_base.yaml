@@ -6,33 +6,34 @@ services:
     privileged: false
     ipc: host
     volumes:
-      # This line allows running graphical applications in the container and visualizing them on the host.
-      # This works provided that the host has a display connected (so the X11 socket exists) and the
-      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
-      - /tmp/.X11-unix:/tmp/.X11-unix:ro
-      # A single example JSON is selected by run_docker_container.sh and mounted with a stable path.
-      # user_config_path in PARAMS_FILE must point to /tmp/user_config.json.
-      - ${USER_CONFIG_FILE_HOST:?USER_CONFIG_FILE_HOST is required}:/tmp/user_config.json:ro
-      - ${PARAMS_FILE_HOST:?PARAMS_FILE_HOST is required}:/tmp/params.yaml:ro
-      - ./run_launch.sh:/tmp/run_launch.sh:ro
+      # Uncomment the JSON config file you want to use for Livox Gen2.
+      - ./example_1.front_livox_mid360.json:/tmp/user_config.json:ro
+      # - ./example_2.front_back_livox_mid360.json:/tmp/user_config.json:ro
+      # Uncomment the params file you want to use for Livox Gen2.
+      - ./example_1.front_livox_mid360.yaml:/tmp/params.yaml:ro
+      # - ./example_2.front_back_livox_mid360.yaml:/tmp/params.yaml:ro
       - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     devices:
       - /dev/dri:/dev/dri
     # Environment variables passed to the container.
     # Keep PARAMS_FILE explicit here because it must match the path defined in 'volumes' above.
-    # This improves visibility and avoids hiding this fixed mapping inside the external .env file.
     environment:
-      DISPLAY: ${DISPLAY}
-      QT_X11_NO_MITSHM: "1"
-      TERM: ${TERM:-xterm-256color}
+      TERM: xterm-256color
       RCUTILS_LOGGING_BUFFERED_STREAM: "0"
       RCUTILS_LOGGING_USE_STDOUT: "1"
       RCUTILS_COLORIZED_OUTPUT: "1"
       RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
       RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
       CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
+      ROS_DOMAIN_ID: "11"
+      NAMESPACE: "test"
+      ROBOT_NAME: "robot"
       PARAMS_FILE: /tmp/params.yaml
-    # Additional environment variables are loaded from the file pointed to by ENV_FILE.
-    # Set ENV_FILE in the host environment before running `docker compose`.
-    env_file:
-      - ${ENV_FILE:?ENV_FILE is required}
+      TOPIC_REMAPPINGS: ""
+      NODE_OPTIONS: "name=livox_gen2_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
+      # For ROS2-Humble, and earlier versions of ROS2, to limit the discovery to localhost only.
+      # ROS_LOCALHOST_ONLY: 1|0
+      # Since ROS2-Jazzy, more options are available to configure the DDS discovery behaviour:
+      # ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT
+      # ROS_STATIC_PEERS='192.168.0.1;remote.com'

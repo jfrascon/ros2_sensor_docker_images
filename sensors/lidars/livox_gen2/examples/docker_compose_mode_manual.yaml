@@ -1,16 +1,11 @@
 services:
   livox_gen2_srvc:
-    volumes:
-      - ./run_launch_in_terminal.sh:/tmp/run_launch_in_terminal.sh
     # init: true enables a tiny init (tini) as PID 1 inside the container.
     # It forwards signals (SIGTERM/SIGINT) to the app and reaps zombie processes from child workers, preventing dirty
     # shutdowns and resource leaks.
-    # It is not a supervisor— it won’t restart your app; it only fixes PID-1 semantics.
+    # It is not a supervisor; it won't restart your app, it only fixes PID-1 semantics.
     # Recommended for services that spawn subprocesses or use launchers/daemons (e.g., ros2 launch, drivers).
     init: true
     stdin_open: true
     tty: true
-    # To launch the ROS2 driver manually inside the container, open a terminal, connect to the container with:
-    #   docker exec -it <container_name> bash
-    # Run /tmp/run_launch_in_terminal.sh:
     command: ["bash"]
