@@ -75,7 +75,7 @@ while IFS= read -r line || [ -n "${line}" ]; do
     line_number=$((line_number + 1))
     trimmed_line="${line#"${line%%[![:space:]]*}"}"
 
-    if [ -z "${trimmed_line}" ] || [[ "${trimmed_line}" == \#* ]]; then
+    if [ -z "${trimmed_line}" ] || [[ ${trimmed_line} == \#* ]]; then
         continue
     fi
 
@@ -191,9 +191,9 @@ rm -rf "${local_um7_repo}/.git"
 # so we create a minimal local package 'umx_bringup' under PKGS_DIR to host our launch entry point.
 #
 # 'umx_bringup' is responsible for:
-# - owning and installing 'launch/eut_sensor.launch.py',
+# - owning and installing 'launch/sensor.launch.py',
 # - depending on 'umx_driver',
-# - giving us a stable entry point: 'ros2 launch umx_bringup eut_sensor.launch.py'.
+# - giving us a stable entry point: 'ros2 launch umx_bringup sensor.launch.py'.
 #
 # This keeps runtime behavior explicit and avoids relying on upstream repository layout details.
 
@@ -206,7 +206,7 @@ fi
 
 mkdir -pv "${local_umx_bringup_repo}/launch"
 
-cat > "${local_umx_bringup_repo}/package.xml" <<'EOF_PACKAGE_XML'
+cat >"${local_umx_bringup_repo}/package.xml" <<'EOF_PACKAGE_XML'
 <?xml version="1.0"?>
 <package format="3">
   <name>umx_bringup</name>
@@ -227,7 +227,7 @@ cat > "${local_umx_bringup_repo}/package.xml" <<'EOF_PACKAGE_XML'
 </package>
 EOF_PACKAGE_XML
 
-cat > "${local_umx_bringup_repo}/CMakeLists.txt" <<'EOF_CMAKE'
+cat >"${local_umx_bringup_repo}/CMakeLists.txt" <<'EOF_CMAKE'
 cmake_minimum_required(VERSION 3.8)
 project(umx_bringup)
 
@@ -239,13 +239,13 @@ install(DIRECTORY launch
 ament_package()
 EOF_CMAKE
 
-if [ ! -s "${script_dir}/eut_sensor.launch.py" ]; then
-    log "ERROR: Missing file '${script_dir}/eut_sensor.launch.py'" >&2
+if [ ! -s "${script_dir}/sensor.launch.py" ]; then
+    log "ERROR: Missing file '${script_dir}/sensor.launch.py'" >&2
     exit 1
 fi
 
-log "Placing the file 'eut_sensor.launch.py' into '${local_umx_bringup_repo}/launch/eut_sensor.launch.py'"
-install -m 0755 "${script_dir}/eut_sensor.launch.py" "${local_umx_bringup_repo}/launch/eut_sensor.launch.py"
+log "Placing the file 'sensor.launch.py' into '${local_umx_bringup_repo}/launch/sensor.launch.py'"
+install -m 0755 "${script_dir}/sensor.launch.py" "${local_umx_bringup_repo}/launch/sensor.launch.py"
 
 # ------------------------------------------------------------------------------
 # Cloning 'ros2_launch_helpers' package.

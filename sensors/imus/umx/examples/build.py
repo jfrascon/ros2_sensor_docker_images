@@ -176,7 +176,7 @@ if __name__ == '__main__':
     shutil.copy2(umx_dir.joinpath('setup.sh'), tmp_context_dir.joinpath('setup.sh'))
     shutil.copy2(examples_dir.joinpath('refs.txt'), tmp_context_dir.joinpath('refs.txt'))
     shutil.copy2(umx_dir.joinpath('compile.sh'), tmp_context_dir.joinpath('compile.sh'))
-    shutil.copy2(umx_dir.joinpath('eut_sensor.launch.py'), tmp_context_dir.joinpath('eut_sensor.launch.py'))
+    shutil.copy2(umx_dir.joinpath('sensor.launch.py'), tmp_context_dir.joinpath('sensor.launch.py'))
 
     # ------------------------------------------------------------------
     # Build command
