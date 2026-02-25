@@ -7,7 +7,7 @@ Repositorios oficiales:
 - Paquetes ROS2 de UM7/UM6: `https://github.com/ros-drivers/um7/tree/ros2`
 - Librería `serial-ros2`: `https://github.com/RoverRobotics-forks/serial-ros2`
 
-Los scripts `setup.sh`, `compile.sh` y `eut_sensor.launch.py` están diseñados para usarse desde un `Dockerfile` y automatizar la construcción de la imagen.
+Los scripts `setup.sh`, `compile.sh` y `sensor.launch.py` están diseñados para usarse desde un `Dockerfile` y automatizar la construcción de la imagen.
 
 ## Ejemplo de uso
 
@@ -43,67 +43,64 @@ Una vez construida la imagen con `examples/build.py`, puedes iniciar el contened
 - modo `automatic`: el contenedor arranca y ejecuta automáticamente el launch del driver ROS2.
 - modo `manual`: el contenedor arranca sin lanzar el driver, para que puedas entrar a una shell y ejecutarlo manualmente.
 
+Nota sobre el alcance de estos ficheros de ejemplo:
+- `run_docker_container.sh` y los compose fragmentados (`docker_compose_mode_automatic.yaml`, `docker_compose_mode_manual.yaml`, `docker_compose_gui.yaml`) están orientados a facilitar pruebas y experimentación.
+- En un despliegue de producción, lo habitual es definir un único `docker compose` propio con la configuración del sensor, el comando de arranque y, si aplica, la parte de GUI.
+- En ese caso no es necesario usar `run_docker_container.sh` ni separar la configuración en modos `automatic/manual/gui`.
+
+El script solo recibe argumentos posicionales:
+- `<img_id>`
+- `<mode>` (`automatic` o `manual`)
+
+Los parámetros de UMX se seleccionan en `examples/docker_compose_base.yaml`:
+- Por defecto (ya activo): `um7_params.yaml`.
+- Alternativa: descomentar `um6_params.yaml` y comentar la línea de `um7`.
+
 Ejemplo (si construiste con `./build.py jazzy`, el `img_id` por defecto es `umx:jazzy`):
 
 ```bash
 cd sensors/imus/umx/examples
-./run_docker_container.sh umx:jazzy automatic --um-model 7
+./run_docker_container.sh umx:jazzy automatic
 ```
 
-Si prefieres modo manual:
+Si prefieres modo manual (UM6 como ejemplo):
 
 ```bash
 cd sensors/imus/umx/examples
-./run_docker_container.sh umx:jazzy manual --um-model 7
-docker compose exec -it um_srvc bash
-bash /tmp/run_launch_in_terminal.sh
+# En docker_compose_base.yaml:
+# - comentar la línea de volumen de um7_params
+# - descomentar la línea de volumen de um6_params
+# - fijar UM_MODEL a \"6\"
+# - ajustar TOPIC_REMAPPINGS para usar tópicos um6/...
+./run_docker_container.sh umx:jazzy manual
+docker compose exec -it umx_srvc bash
+ros2 launch umx_bringup sensor.launch.py
 ```
 
-Este ejemplo también está preparado para ejecutar aplicaciones gráficas desde el contenedor y mostrarlas en el host mediante X11/XWayland.
+El flujo de GUI es automático:
+- Si `DISPLAY` está definido en el host, `run_docker_container.sh` añade `docker_compose_gui.yaml` y ejecuta `xhost +local:`.
+- Si `DISPLAY` no está definido, el contenedor arranca en modo headless (sin montaje de X11).
 
-El script `run_docker_container.sh` permite configurar variables mediante `--env KEY=VALUE`.
+Las variables de entorno de ejecución están definidas en `examples/docker_compose_base.yaml`, en la sección `environment`.
+En particular, `sensor.launch.py` usa:
+- `ROBOT_NAME` (obligatoria para el launch)
+- `PARAMS_FILE` (obligatoria para el launch; fijada a `/tmp/params.yaml` en compose)
+- `NAMESPACE` (opcional)
+- `UM_MODEL` (opcional, por defecto `7`, valores permitidos: `6` o `7`)
+- `TOPIC_REMAPPINGS` (opcional, string de remapeo `OLD:=NEW,OLD:=NEW,...`)
+- `NODE_OPTIONS` (opcional, formato `kvs`: `key=value,key=value,...`)
+- `LOGGING_OPTIONS` (opcional, formato `kvs`: `key=value,key=value,...`)
 
-Variables con valores por defecto en este ejemplo:
-
-- `NAMESPACE` (por defecto: vacío)
-- `ROBOT_NAME` (por defecto: `robot`)
-- `ROS_DOMAIN_ID` (por defecto: `11`)
-- `NODE_OPTIONS` (por defecto: `name=umx,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
-- `LOGGING_OPTIONS` (por defecto: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
-
-`NODE_OPTIONS` y `LOGGING_OPTIONS` son variables de tipo `kvs` (key-value-string), es decir, un string formado por pares `key=value` separados por comas.
-
-Variables adicionales soportadas por el script:
-
-- `TOPIC_REMAPPINGS`: string de remapeo en formato `OLD:=NEW`, con pares separados por comas.
-- `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble y anteriores, sin valor por defecto)
-- `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy y posteriores, sin valor por defecto)
-- `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy y posteriores, sin valor por defecto)
-
-En este ejemplo, si no usas `TOPIC_REMAPPINGS`, los nombres de tópicos incluyen el nombre del nodo. Para jerarquías de tópicos más claras, usa un nombre de nodo que represente el dispositivo físico (por ejemplo `front_imu`, `rear_imu`) en lugar de sufijos orientados a implementación.
-
-Hay variables que no se pueden configurar con `--env` en este flujo:
-
-- `RMW_IMPLEMENTATION`: fijada en `examples/docker_compose_base.yaml` como `rmw_cyclonedds_cpp`.
-- `CYCLONEDDS_URI`: fijada en `examples/docker_compose_base.yaml`.
-- `PARAMS_FILE`: se selecciona desde `--um-model` y queda fijada en `examples/docker_compose_base.yaml` como `/tmp/params.yaml`.
-- `IMG_ID`: se toma del argumento posicional `<img_id>` del script.
-- `ENV_FILE`: lo gestiona internamente el script. Es el fichero `.env` temporal que `docker compose` carga mediante `env_file` (en `examples/docker_compose_base.yaml`) para pasar variables de entorno al contenedor del servicio `um_srvc`.
+Otras variables usadas en este ejemplo:
+- `ROS_DOMAIN_ID`
+- `RMW_IMPLEMENTATION` (fijada a `rmw_cyclonedds_cpp`)
+- `CYCLONEDDS_URI` (fijada a `examples/cyclonedds_config.xml`)
 
 La configuración de CycloneDDS usada en este ejemplo está definida en `examples/cyclonedds_config.xml`.
 
 La configuración de parámetros por modelo UM está definida en:
 - `examples/um6_params.yaml`
 - `examples/um7_params.yaml`
-
-Ejemplo de ejecución con overrides:
-
-```bash
-./run_docker_container.sh umx:jazzy automatic --um-model 6 \
-  --env ROBOT_NAME=imu_front \
-  --env ROS_DOMAIN_ID=21 \
-  --env ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
-```
 
 Para ver todas las opciones disponibles:
 
