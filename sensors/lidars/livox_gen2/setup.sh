@@ -78,7 +78,7 @@ while IFS= read -r line || [ -n "${line}" ]; do
     line_number=$((line_number + 1))
     trimmed_line="${line#"${line%%[![:space:]]*}"}"
 
-    if [ -z "${trimmed_line}" ] || [[ "${trimmed_line}" == \#* ]]; then
+    if [ -z "${trimmed_line}" ] || [[ ${trimmed_line} == \#* ]]; then
         continue
     fi
 
@@ -199,20 +199,20 @@ git clone --branch "${LIVOX_ROS_DRIVER2_REF}" --depth 1 "${remote_livox_ros_driv
 rm -rf "${local_livox_ros_driver2_repo}/.git"
 
 # ----------------------------------------------------------------------------------------------------------------------
-# Installing launch file eut_sensor.launch.py in livox_ros_driver2 package.
+# Installing launch file sensor.launch.py in livox_ros_driver2 package.
 # ----------------------------------------------------------------------------------------------------------------------
 
-if [ ! -s "${script_dir}/eut_sensor.launch.py" ]; then
-    log "ERROR: Missing file '${script_dir}/eut_sensor.launch.py'" >&2
+if [ ! -s "${script_dir}/sensor.launch.py" ]; then
+    log "ERROR: Missing file '${script_dir}/sensor.launch.py'" >&2
     exit 1
 fi
 
-if [ -f "${local_livox_ros_driver2_repo}/launch_ROS2/eut_sensor.launch.py" ]; then
-    rm -f "${local_livox_ros_driver2_repo}/launch_ROS2/eut_sensor.launch.py"
+if [ -f "${local_livox_ros_driver2_repo}/launch_ROS2/sensor.launch.py" ]; then
+    rm -f "${local_livox_ros_driver2_repo}/launch_ROS2/sensor.launch.py"
 fi
 
-log "Placing the file 'eut_sensor.launch.py' into '${local_livox_ros_driver2_repo}/launch_ROS2/eut_sensor.launch.py'"
-install -m 0755 "${script_dir}/eut_sensor.launch.py" "${local_livox_ros_driver2_repo}/launch_ROS2/eut_sensor.launch.py"
+log "Placing the file 'sensor.launch.py' into '${local_livox_ros_driver2_repo}/launch_ROS2/sensor.launch.py'"
+install -m 0755 "${script_dir}/sensor.launch.py" "${local_livox_ros_driver2_repo}/launch_ROS2/sensor.launch.py"
 
 # ------------------------------------------------------------------------------
 # Cloning 'ros2_launch_helpers' package.

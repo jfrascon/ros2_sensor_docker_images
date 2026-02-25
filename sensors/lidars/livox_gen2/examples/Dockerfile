@@ -65,7 +65,7 @@ required_context_files=(
   refs.txt
   setup.sh
   compile.sh
-  eut_sensor.launch.py
+  sensor.launch.py
 )
 
 for file in "${required_context_files[@]}"; do
