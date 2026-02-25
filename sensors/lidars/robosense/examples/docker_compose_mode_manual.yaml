@@ -1,7 +1,5 @@
 services:
   robosense_srvc:
-    volumes:
-      - ./run_launch_in_terminal.sh:/tmp/run_launch_in_terminal.sh:ro
     # init: true enables a tiny init (tini) as PID 1 inside the container.
     # It forwards signals (SIGTERM/SIGINT) to the app and reaps zombie processes from child workers, preventing dirty
     # shutdowns and resource leaks.
