@@ -44,6 +44,14 @@ The Livox example supports two configurations:
 - `example 1`: one front LiDAR (`example_1.front_livox_mid360.json` + `example_1.front_livox_mid360.yaml`)
 - `example 2`: front and rear LiDARs (`example_2.front_back_livox_mid360.json` + `example_2.front_back_livox_mid360.yaml`)
 
+Important JSON note:
+- Files used by the driver (`example_*.json`, or any file pointed by `user_config_path`) must be strict JSON.
+- Do not include `//` comments in those files. The parser from the `livox_ros_driver2` source code (manufacturer driver) will fail and can report `parse lidar type failed.`
+- This repository provides commented templates to explain the purpose of each field:
+  - `examples/template_user_config_1_lidar.json` (one LiDAR)
+  - `examples/template_user_config_2_lidars.json` (two LiDARs)
+- Use those templates as guidance to create your project-specific JSON configs, but pass comment-free JSON files to the driver at runtime.
+
 Once the image is built with `examples/build.py`, you can start the container in two modes using `examples/run_docker_container.sh`:
 
 - `automatic` mode: the container starts and automatically runs the ROS2 driver launch.
