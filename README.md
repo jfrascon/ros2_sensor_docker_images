@@ -31,40 +31,28 @@ hard to reproduce across laptops, CI, and robots.
 **The approach here** is to package each driver (code + native deps + ROS2 wrapper) inside its own Docker image.
 That way a project only needs to build (or pull) a known image and run it.
 
-Example docker-compose entry to launch a RoboSense LiDAR:
+Example docker-compose service to launch a RoboSense LiDAR:
 
 ```yaml
 services:
-  robosense_lidar_srvc:
+  robosense_srvc:
     image: ${IMG_ID}
     network_mode: host
     privileged: false
+    ipc: host
     volumes:
-      # This line allows running graphical applications in the container and visualizing them on the host.
-      # This works provided that the host has a display connected (so the X11 socket exists) and the
-      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./${CONFIG_FILE}:/tmp/config.yaml
-      - ./exec_launch_file.sh:/tmp/exec_launch_file.sh
+      - ./robosense_helios_16p_config.yaml:/tmp/config.yaml:ro
+      - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     environment:
-      NAMESPACE: ${NAMESPACE:-} # Optional
-      ROBOT_NAME: ${ROBOT_NAME:-robot} # Required
-      CONFIG_FILE: /tmp/config.yaml # Optional, default is ''
-      # No remappings needed, topics are defined in the config_file.
-      # NODE_OPTIONS is optional.
-      # Attention should be paid to the node's name given here, 'robosense_lidar_ros2_driver'.
-      # If name is not provided, the default value used for the node's name is 'robosense_lidar_ros2_driver'.
+      NAMESPACE: test # Optional
+      ROBOT_NAME: robot # Required
+      CONFIG_FILE: /tmp/config.yaml # Required
       NODE_OPTIONS: "name=robosense_lidar_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
-      # LOGGING_OPTIONS is optional.
-      # Attention should be paid to the loggers:
-      #  <NAMESPACE>.<ROBOT_NAME>.<NODE_OPTIONS.name>=debug.
       LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
-      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
-      RCUTILS_LOGGING_USE_STDOUT: "1"
-      RCUTILS_COLORIZED_OUTPUT: "1"
-      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
-      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-11}
-      RMW_IMPLEMENTATION: ${RMW_IMPLEMENTATION:-rmw_zenoh_cpp}
+      ROS_DOMAIN_ID: "11"
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
+    command: ["ros2", "launch", "rslidar_sdk", "sensor.launch.py"]
 ```
 
 ## Repository anatomy
@@ -106,10 +94,10 @@ python3 sensors/imus/umx/examples/build.py jazzy
 ### Building a multi-sensor example image
 
 See `example_multi_sensor/README.md`. The example shows how a user can create a custom Dockerfile that
-clones this repository and reuses existing `install.sh` and `compile.sh` scripts for multiple sensors.
+clones this repository and reuses existing `setup.sh` and `compile.sh` scripts for multiple sensors.
 
 ```bash
-python3 example_multi_sensor/build.py jazzy
+python3 example_multi_sensor/build.py ubuntu:24.04 jazzy multi_sensor:jazzy
 ```
 
 ### Dockerfile template
@@ -118,7 +106,7 @@ Each image follows a common structure:
 
 1. Base system install (`base_docker_files/install_base_system.sh`).
 2. ROS2 install (`base_docker_files/install_ros.sh`).
-3. Sensor install (`sensors/<type>/<name>/install.sh`).
+3. Sensor setup (`sensors/<type>/<name>/setup.sh`).
 4. rosdep + colcon mixin/metadata (`base_docker_files/rosdep_init_update_install.sh` and `colcon_mixin_metadata.sh`).
 5. Compile (`sensors/<type>/<name>/compile.sh`).
 6. Install entrypoint (`base_docker_files/entrypoint.sh`).
@@ -142,7 +130,7 @@ exec "$@"
 
 ### Custom launch file
 
-Each sensor provides a `eut_sensor.launch.py` that wraps the vendor driver in a consistent launch entrypoint.
+Each sensor provides a `sensor.launch.py` that wraps the vendor driver in a consistent launch entrypoint.
 The Dockerfiles install that launch file into the driver package so it can be run with `ros2 launch`.
 
 Check each sensor folder for examples of how to use the launch file and what parameters are supported, since they might vary a little among sensors.
