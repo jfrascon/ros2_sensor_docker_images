@@ -9,7 +9,7 @@ Repositorios oficiales:
 
 Actualmente este proyecto usa forks mantenidos para `rslidar_sdk`, `rslidar_msg` y `ros2_launch_helpers`, seleccionados en `examples/refs.txt`.
 
-Los scripts `setup.sh`, `compile.sh` y `eut_sensor.launch.py` están diseñados para usarse desde un `Dockerfile` y automatizar la construcción de la imagen.
+Los scripts `setup.sh`, `compile.sh` y `sensor.launch.py` están diseñados para usarse desde un `Dockerfile` y automatizar la construcción de la imagen.
 
 ## Ejemplo de uso
 
@@ -49,67 +49,63 @@ Una vez construida la imagen con `examples/build.py`, puedes iniciar el contened
 - modo `automatic`: el contenedor arranca y ejecuta automáticamente el launch del driver ROS2.
 - modo `manual`: el contenedor arranca sin lanzar el driver, para que puedas entrar a una shell y ejecutarlo manualmente.
 
-Ejemplo (si construiste con `./build.py jazzy`, el `img_id` por defecto es `robosense:jazzy`):
+Nota sobre el alcance de estos ficheros de ejemplo:
+- `run_docker_container.sh` y los compose fragmentados (`docker_compose_mode_automatic.yaml`, `docker_compose_mode_manual.yaml`, `docker_compose_gui.yaml`) están orientados a facilitar pruebas y experimentación.
+- En un despliegue de producción, lo habitual es definir un único `docker compose` propio con la configuración del sensor, el comando de arranque y, si aplica, la parte de GUI.
+- En ese caso no es necesario usar `run_docker_container.sh` ni separar la configuración en modos `automatic/manual/gui`.
+
+El script solo recibe argumentos posicionales:
+- `<img_id>`
+- `<mode>` (`automatic` o `manual`)
+
+El fichero de configuración de RoboSense se selecciona en `examples/docker_compose_base.yaml`:
+- Por defecto (ya activo): `example_1.front_robosense_helios_16p_config.yaml` (un LiDAR).
+- Alternativa: descomentar `example_2.front_back_robosense_helios_16p_config.yaml` y comentar la línea de `example_1`.
+
+Ejemplo 1 (si construiste con `./build.py jazzy`, el `img_id` por defecto es `robosense:jazzy`):
 
 ```bash
 cd sensors/lidars/robosense/examples
-./run_docker_container.sh robosense:jazzy automatic --example 1
+./run_docker_container.sh robosense:jazzy automatic
 ```
 
-Si prefieres modo manual:
+Ejemplo 2 en modo manual:
 
 ```bash
 cd sensors/lidars/robosense/examples
-./run_docker_container.sh robosense:jazzy manual --example 2
+# En docker_compose_base.yaml:
+# - comentar la línea de volumen de example_1
+# - descomentar la línea de volumen de example_2
+./run_docker_container.sh robosense:jazzy manual
 docker compose exec -it robosense_srvc bash
-bash /tmp/run_launch_in_terminal.sh
+ros2 launch rslidar_sdk sensor.launch.py
 ```
 
-Este ejemplo también está preparado para ejecutar aplicaciones gráficas desde el contenedor y mostrarlas en el host mediante X11/XWayland.
+El flujo de GUI es automático:
+- Si `DISPLAY` está definido en el host, `run_docker_container.sh` añade `docker_compose_gui.yaml` y ejecuta `xhost +local:`.
+- Si `DISPLAY` no está definido, el contenedor arranca en modo headless (sin montaje de X11).
 
-El script `run_docker_container.sh` permite configurar variables mediante `--env KEY=VALUE`.
+Las variables de entorno de ejecución están definidas en `examples/docker_compose_base.yaml`, en la sección `environment`.
+En particular, `sensor.launch.py` usa:
 
-Variables con valores por defecto en este ejemplo:
+- `NAMESPACE` (opcional)
+- `ROBOT_NAME` (obligatoria para el launch)
+- `CONFIG_FILE` (obligatoria para el launch; fijada a `/tmp/config.yaml` en compose)
+- `NODE_OPTIONS` (opcional, formato `kvs`: `key=value,key=value,...`)
+- `LOGGING_OPTIONS` (opcional, formato `kvs`: `key=value,key=value,...`)
 
-- `NAMESPACE` (por defecto: vacío)
-- `ROBOT_NAME` (por defecto: `robot`)
-- `ROS_DOMAIN_ID` (por defecto: `11`)
-- `NODE_OPTIONS` (por defecto: `name=robosense_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
-- `LOGGING_OPTIONS` (por defecto: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
-
-`NODE_OPTIONS` y `LOGGING_OPTIONS` son variables de tipo `kvs` (key-value-string), es decir, un string formado por pares `key=value` separados por comas.
-
-Variables adicionales soportadas por el script:
-
-- `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble y anteriores, sin valor por defecto)
-- `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy y posteriores, sin valor por defecto)
-- `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy y posteriores, sin valor por defecto)
-
-Hay variables que no se pueden configurar con `--env` en este flujo:
-
-- `RMW_IMPLEMENTATION`: fijada en `examples/docker_compose_base.yaml` como `rmw_cyclonedds_cpp`.
-- `CYCLONEDDS_URI`: fijada en `examples/docker_compose_base.yaml`.
-- `TOPIC_REMAPPINGS`: no está soportada en RoboSense; los remapeos se definen directamente en el fichero de configuración seleccionado.
-- `CONFIG_FILE`: fijada en `examples/docker_compose_base.yaml`. Apunta al fichero de configuración seleccionado montado como `/tmp/config.yaml`.
-- `CONFIG_FILE_HOST`: la selecciona internamente `run_docker_container.sh` a partir de `--example`.
-- `IMG_ID`: se toma del argumento posicional `<img_id>` del script.
-- `ENV_FILE`: lo gestiona internamente el script. Es el fichero `.env` temporal que `docker compose` carga mediante `env_file` (en `examples/docker_compose_base.yaml`) para pasar variables de entorno al contenedor del servicio `robosense_srvc`.
+Otras variables usadas en este ejemplo:
+- `ROS_DOMAIN_ID`
+- `RMW_IMPLEMENTATION` (fijada a `rmw_cyclonedds_cpp`)
+- `CYCLONEDDS_URI` (fijada a `examples/cyclonedds_config.xml`)
 
 La configuración de CycloneDDS usada en este ejemplo está definida en `examples/cyclonedds_config.xml`.
 
-El flujo de launch mantiene el comportamiento actual de sustitución de placeholders en la configuración:
+El flujo de launch soporta plantillas en la configuración:
 - Los ficheros de configuración pueden contener `{{robot_prefix}}`.
-- en este flujo, `run_docker_container.sh` monta el fichero de configuración seleccionado como `/tmp/config.yaml` según `--example`.
-- `run_launch.sh` resuelve `{{robot_prefix}}` en el fichero de configuración y lanza el driver usando la ruta de configuración efectiva.
-
-Ejemplo de ejecución con overrides:
-
-```bash
-./run_docker_container.sh robosense:jazzy automatic --example 2 \
-  --env ROBOT_NAME=robot1 \
-  --env ROS_DOMAIN_ID=21 \
-  --env ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
-```
+- `sensor.launch.py` renderiza el fichero con Jinja2 usando `robot_prefix`, derivado de `ROBOT_NAME`.
+- Variables de plantilla no definidas provocan error (`StrictUndefined`).
+- Si el render modifica el contenido, se genera y usa el fichero efectivo `/tmp/robosense_config_YYYYMMDD.yaml`.
 
 Para ver todas las opciones disponibles:
 
