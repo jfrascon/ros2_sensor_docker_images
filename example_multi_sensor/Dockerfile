@@ -91,15 +91,15 @@ required_files=(
   "${base_dir}/entrypoint.sh"
   "${umx_dir}/setup.sh"
   "${umx_dir}/compile.sh"
-  "${umx_dir}/eut_sensor.launch.py"
+  "${umx_dir}/sensor.launch.py"
   "${umx_dir}/examples/refs.txt"
   "${livox_gen2_dir}/setup.sh"
   "${livox_gen2_dir}/compile.sh"
-  "${livox_gen2_dir}/eut_sensor.launch.py"
+  "${livox_gen2_dir}/sensor.launch.py"
   "${livox_gen2_dir}/examples/refs.txt"
   "${robosense_dir}/setup.sh"
   "${robosense_dir}/compile.sh"
-  "${robosense_dir}/eut_sensor.launch.py"
+  "${robosense_dir}/sensor.launch.py"
   "${robosense_dir}/examples/refs.txt"
 )
 

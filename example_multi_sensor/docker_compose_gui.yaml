@@ -1,5 +1,9 @@
 services:
   umx_srvc:
+    environment:
+      # If DISPLAY is not defined on the host (e.g. headless machine), this expands to an empty value.
+      DISPLAY: ${DISPLAY:-}
+      QT_X11_NO_MITSHM: "1"
     volumes:
       # This line allows running graphical applications in the container and visualizing them on the host.
       # This works provided that the host has a display connected (so the X11 socket exists) and the
@@ -7,6 +11,10 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
 
   livox_gen2_srvc:
+    environment:
+      # If DISPLAY is not defined on the host (e.g. headless machine), this expands to an empty value.
+      DISPLAY: ${DISPLAY:-}
+      QT_X11_NO_MITSHM: "1"
     volumes:
       # This line allows running graphical applications in the container and visualizing them on the host.
       # This works provided that the host has a display connected (so the X11 socket exists) and the
@@ -14,6 +22,10 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:ro
 
   robosense_srvc:
+    environment:
+      # If DISPLAY is not defined on the host (e.g. headless machine), this expands to an empty value.
+      DISPLAY: ${DISPLAY:-}
+      QT_X11_NO_MITSHM: "1"
     volumes:
       # This line allows running graphical applications in the container and visualizing them on the host.
       # This works provided that the host has a display connected (so the X11 socket exists) and the

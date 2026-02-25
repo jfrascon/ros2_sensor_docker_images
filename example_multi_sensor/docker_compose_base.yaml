@@ -5,24 +5,20 @@
 # Anchor with common environment variables reused by all services.
 # Reference: https://docs.docker.com/reference/compose-file/fragments/
 x-common-environment: &common-environment
-  NAMESPACE: ${NAMESPACE}
-  ROBOT_NAME: ${ROBOT_NAME}
-  ROS_DOMAIN_ID: ${ROS_DOMAIN_ID}
-  # If DISPLAY is not defined on the host (e.g. headless machine), this expands to an empty value and is not an error.
-  DISPLAY: ${DISPLAY:-}
-  QT_X11_NO_MITSHM: "1"
+  NAMESPACE: multisensor
+  ROBOT_NAME: robot
+  ROS_DOMAIN_ID: "11"
   TERM: xterm-256color
-  RCUTILS_LOGGING_BUFFERED_STREAM: ${RCUTILS_LOGGING_BUFFERED_STREAM}
-  RCUTILS_LOGGING_USE_STDOUT: ${RCUTILS_LOGGING_USE_STDOUT}
-  RCUTILS_COLORIZED_OUTPUT: ${RCUTILS_COLORIZED_OUTPUT}
-  RCUTILS_CONSOLE_OUTPUT_FORMAT: ${RCUTILS_CONSOLE_OUTPUT_FORMAT}
+  RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+  RCUTILS_LOGGING_USE_STDOUT: "1"
+  RCUTILS_COLORIZED_OUTPUT: "1"
+  RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
   RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
   CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
   # Optional ROS discovery variables:
-  # Uncomment these lines here and set/uncomment the matching keys in deployment.env (or your custom --env-file).
-  # ROS_LOCALHOST_ONLY: ${ROS_LOCALHOST_ONLY}
-  # ROS_AUTOMATIC_DISCOVERY_RANGE: ${ROS_AUTOMATIC_DISCOVERY_RANGE}
-  # ROS_STATIC_PEERS: ${ROS_STATIC_PEERS}
+  # ROS_LOCALHOST_ONLY: 1|0
+  # ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT
+  # ROS_STATIC_PEERS: '192.168.0.1;remote.com'
 
 # ------------------------------------------------------------------------------
 # SERVICES
@@ -44,9 +40,8 @@ services:
       #   the container; this mount is only for reading metadata/state.
       - /run/udev:/run/udev:ro
       - /etc/udev/rules.d:/etc/udev/rules.d:ro
-      - ${UM_PARAMS_FILE}:/tmp/params.yaml:ro
-      - ./run_launch_umx.sh:/tmp/run_launch.sh:ro
-      - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+      - ./um7_params.yaml:/tmp/params.yaml:ro
+      - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     devices:
       - /dev/dri:/dev/dri
     device_cgroup_rules:
@@ -54,8 +49,9 @@ services:
     # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
     environment:
       <<: *common-environment
+      UM_MODEL: "7"
+      UM_PARAMS_FILE: ./um7_params.yaml
       PARAMS_FILE: /tmp/params.yaml
-      UM_MODEL: ${UM_MODEL}
       TOPIC_REMAPPINGS: imu/data:=umx/data,imu/mag:=umx/mag,imu/rpy:=umx/rpy,imu/temperature:=umx/temperature,imu/reset:=umx/reset
       NODE_OPTIONS: name=umx_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0
       LOGGING_OPTIONS: log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true
@@ -66,17 +62,17 @@ services:
     privileged: false
     ipc: host
     volumes:
-      # Livox JSON and params files are selected through env-file variables.
       # user_config_path in the mounted params file must point to /tmp/user_config.json.
-      - ${LIVOX_USER_CONFIG_FILE}:/tmp/user_config.json:ro
-      - ${LIVOX_PARAMS_FILE}:/tmp/params.yaml:ro
-      - ./run_launch_livox_gen2.sh:/tmp/run_launch.sh:ro
-      - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+      - ./livox_mid360.json:/tmp/user_config.json:ro
+      - ./livox_mid360.yaml:/tmp/params.yaml:ro
+      - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     devices:
       - /dev/dri:/dev/dri
     # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
     environment:
       <<: *common-environment
+      LIVOX_USER_CONFIG_FILE: ./livox_mid360.json
+      LIVOX_PARAMS_FILE: ./livox_mid360.yaml
       PARAMS_FILE: /tmp/params.yaml
       TOPIC_REMAPPINGS: ""
       NODE_OPTIONS: name=livox_gen2_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0
@@ -88,14 +84,14 @@ services:
     privileged: false
     ipc: host
     volumes:
-      - ${ROBOSENSE_CONFIG_FILE}:/tmp/config.yaml:ro
-      - ./run_launch_robosense.sh:/tmp/run_launch.sh:ro
-      - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+      - ./robosense_helios_16p_config.yaml:/tmp/config.yaml:ro
+      - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     devices:
       - /dev/dri:/dev/dri
     # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
     environment:
       <<: *common-environment
+      ROBOSENSE_CONFIG_FILE: ./robosense_helios_16p_config.yaml
       CONFIG_FILE: /tmp/config.yaml
       NODE_OPTIONS: name=robosense_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0
       LOGGING_OPTIONS: log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true
