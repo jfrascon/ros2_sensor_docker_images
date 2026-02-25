@@ -1,69 +1,36 @@
 {
-  // lidar_log_... are configuration fields for the livox_sdk2 driver
-  "lidar_log_enable": false, // enable/disable the firmware log
+  "lidar_log_enable": false,
   "lidar_log_cache_size_MB": 500,
   "lidar_log_path": "./",
   "MID360": {
-    // The LiDAR opens the ports listed in 'lidar_net_info' and sends its packets to the IP/port
-    // values given in 'host_net_info'.
-    // The host opens the ports listed in 'host_net_info' to listen to the data sent by the LiDAR.
-    // Only the control channel ('cmd_data') is two-way; every other channel is LiDAR -> Host.
-    // Ports opened by the LiDAR
     "lidar_net_info": {
-      // Control channel.
-      // LiDAR opens port 56100 to receive commands from host and sends replies back to host:56101.
-      // <-> bidirectional
       "cmd_data_port": 56100,
-      // Status/error messages.
-      // LiDAR opens port 56200 to send push messages -> host:56201.
       "push_msg_port": 56200,
-      // Point-cloud stream.
-      // LiDAR opens port 56300 to send point-cloud data -> host:56301.
       "point_data_port": 56300,
-      // IMU packets.
-      // LiDAR opens port 56400 to send IMU data -> host:56401.
       "imu_data_port": 56400,
-      // Firmware logs (heavy traffic if enabled).
-      // LiDAR opens port 56500 to send firmware logs -> host:56501.
       "log_data_port": 56500
     },
-    // Ports opened by the host PC.
     "host_net_info": [
       {
-        // IP address of the single Mid-360 that will talk to THIS host.
         "lidar_ip": [
-          "192.168.1.193"
+          "192.168.123.20"
         ],
-        // IP address of the network interface on the host that will receive the LiDAR packets.
-        "host_ip": "192.168.1.2",
-        // Host opens port 56101 to send commands -> LiDAR:56100 and to receive the replies
-        // host:56101 <- LiDAR:56100.
+        "host_ip": "192.168.123.10",
         "cmd_data_port": 56101,
-        // Host opens port 56201 to receive push messages <- LiDAR:56200.
         "push_msg_port": 56201,
-        // Host opens port 56301 to receive point-cloud data <- LiDAR:56300.
         "point_data_port": 56301,
-        // Host opens port 56401 to receive IMU data <- LiDAR:56400.
         "imu_data_port": 56401,
-        // Host opens port 56501 to receive firmware logs <- LiDAR:56500.
         "log_data_port": 56501
       }
     ]
   },
-  // Configuration fields used by livox_ros_driver2
   "lidar_summary_info": {
     "lidar_type": 8
   },
   "lidar_configs": [
     {
-      "ip": "192.168.1.193",
-      // 1: Cartesian coordinate data (32 bits).
-      // 2: Cartesian coordinate data (16 bits).
-      // 3: Spherical coordinate data.
+      "ip": "192.168.123.20",
       "pcl_data_type": 1,
-      // 0: non-repeating scanning pattern mode.
-      // 1: repeating scanning pattern mode.
-      // 2: repeating scanning pattern mode (low scanning rate).
       "pattern_mode": 0,
       "frame_id": "{{robot_prefix}}front_livox_lidar_link",
       "extrinsic_parameter": {
