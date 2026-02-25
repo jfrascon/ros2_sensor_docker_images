@@ -1,6 +1,6 @@
 # https://docs.docker.com/compose/environment-variables/#the-env-file
 services:
-  um_srvc:
+  umx_srvc:
     image: ${IMG_ID}
     network_mode: host
     privileged: false
@@ -15,12 +15,9 @@ services:
       #   the container; this mount is only for reading metadata/state.
       - /run/udev:/run/udev:ro
       - /etc/udev/rules.d:/etc/udev/rules.d:ro
-      # This line allows running graphical applications in the container and visualizing them on the host.
-      # This works provided that the host has a display connected (so the X11 socket exists) and the
-      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
-      - /tmp/.X11-unix:/tmp/.X11-unix:ro
-      - ${PARAMS_FILE:?PARAMS_FILE is required}:/tmp/params.yaml:ro
-      - ./run_launch.sh:/tmp/run_launch.sh:ro
+      # Uncomment the params file you want to use for UMX.
+      - ./um7_params.yaml:/tmp/params.yaml:ro
+      # - ./um6_params.yaml:/tmp/params.yaml:ro
       - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     devices:
       - /dev/dri:/dev/dri
@@ -28,19 +25,27 @@ services:
       - "c 188:* rwm" # 188 is ttyUSB devices
     # Environment variables passed to the container.
     # Keep PARAMS_FILE explicit here because it must match the path defined in 'volumes' above.
-    # This improves visibility and avoids hiding this fixed mapping inside the external .env file.
     environment:
-      DISPLAY: ${DISPLAY}
-      QT_X11_NO_MITSHM: "1"
-      TERM: ${TERM:-xterm-256color}
+      TERM: xterm-256color
       RCUTILS_LOGGING_BUFFERED_STREAM: "0"
       RCUTILS_LOGGING_USE_STDOUT: "1"
       RCUTILS_COLORIZED_OUTPUT: "1"
       RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
       RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
       CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
+      ROS_DOMAIN_ID: "11"
+      NAMESPACE: "test"
+      ROBOT_NAME: "robot"
+      UM_MODEL: "7"
       PARAMS_FILE: /tmp/params.yaml
-    # Additional environment variables are loaded from the file pointed to by ENV_FILE.
-    # Set ENV_FILE in the host environment before running `docker compose`.
-    env_file:
-      - ${ENV_FILE:?ENV_FILE is required}
+      TOPIC_REMAPPINGS: "imu/data:=um7/data,imu/mag:=um7/mag,imu/rpy:=um7/rpy,imu/temperature:=um7/temperature,imu/reset:=um7/reset"
+      NODE_OPTIONS: "name=umx,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
+      # When using UM6 params, set:
+      # UM_MODEL: \"6\"
+      # TOPIC_REMAPPINGS: \"imu/data:=um6/data,imu/mag:=um6/mag,imu/rpy:=um6/rpy,imu/temperature:=um6/temperature,imu/reset:=um6/reset\"
+      # For ROS2-Humble, and earlier versions of ROS2, to limit the discovery to localhost only.
+      # ROS_LOCALHOST_ONLY: 1|0
+      # Since ROS2-Jazzy, more options are available to configure the DDS discovery behaviour:
+      # ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT
+      # ROS_STATIC_PEERS='192.168.0.1;remote.com'

@@ -1,0 +1,10 @@
+services:
+  umx_srvc:
+    environment:
+      DISPLAY: ${DISPLAY}
+      QT_X11_NO_MITSHM: "1"
+    volumes:
+      # This line allows running graphical applications in the container and visualizing them on the host.
+      # This works provided that the host has a display connected (so the X11 socket exists) and the
+      # necessary permissions have been granted (e.g. by running `xhost +local:` on the host).
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
