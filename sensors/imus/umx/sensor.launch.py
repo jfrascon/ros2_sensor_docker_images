@@ -28,7 +28,7 @@ def launch_node(_ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
 
     # If the node's name is not set, set a default one.
     if not str(node_options['name']).strip():
-        node_options['name'] = 'umx'
+        node_options['name'] = 'umx_ros2_handler'
 
     logging_options = rlh.process_logging_options(
         get_optional_env_var('LOGGING_OPTIONS', rlh.default_logging_options_str())

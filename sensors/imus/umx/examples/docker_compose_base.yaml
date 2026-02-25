@@ -39,7 +39,7 @@ services:
       UM_MODEL: "7"
       PARAMS_FILE: /tmp/params.yaml
       TOPIC_REMAPPINGS: "imu/data:=um7/data,imu/mag:=um7/mag,imu/rpy:=um7/rpy,imu/temperature:=um7/temperature,imu/reset:=um7/reset"
-      NODE_OPTIONS: "name=umx,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      NODE_OPTIONS: "name=umx_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
       LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
       # When using UM6 params, set:
       # UM_MODEL: \"6\"
