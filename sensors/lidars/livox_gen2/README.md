@@ -7,9 +7,9 @@ Official repositories:
 - Livox ROS2 packages: `https://github.com/Livox-SDK/livox_ros_driver2`
 - Livox SDK2: `https://github.com/Livox-SDK/Livox-SDK2`
 
-This project currently uses maintained forks for `livox_ros_driver2` and `livox_sdk2`, selected in `examples/refs.txt`.
+This project currently uses maintained forks for `livox_ros_driver2`, `livox_sdk2`, and `ros2_launch_helpers`, selected in `examples/refs.txt`.
 
-The `setup.sh`, `compile.sh`, and `eut_sensor.launch.py` scripts are designed to be used from a `Dockerfile` and automate image building.
+The `setup.sh`, `compile.sh`, and `sensor.launch.py` scripts are designed to be used from a `Dockerfile` and automate image building.
 
 ## Usage example
 
@@ -57,69 +57,66 @@ Once the image is built with `examples/build.py`, you can start the container in
 - `automatic` mode: the container starts and automatically runs the ROS2 driver launch.
 - `manual` mode: the container starts without launching the driver, so you can enter a shell and run it manually.
 
-Example (if you built with `./build.py jazzy`, the default `img_id` is `livox_gen2:jazzy`):
+Note on the scope of these example files:
+- `run_docker_container.sh` and the compose fragments (`docker_compose_mode_automatic.yaml`, `docker_compose_mode_manual.yaml`, `docker_compose_gui.yaml`) are intended for testing and experimentation.
+- In production, the typical approach is to define your own single `docker compose` file with your sensor configuration, startup command, and GUI setup (if needed).
+- In that case you do not need `run_docker_container.sh` or split compose files by `automatic/manual/gui` mode.
+
+The script only receives positional arguments:
+- `<img_id>`
+- `<mode>` (`automatic` or `manual`)
+
+Configuration files are selected in `examples/docker_compose_base.yaml`:
+- Default (already active): `example_1.front_livox_mid360.json` + `example_1.front_livox_mid360.yaml`.
+- Alternative: uncomment `example_2.front_back_livox_mid360.json` + `example_2.front_back_livox_mid360.yaml` and comment out the `example_1` lines.
+
+Example 1 (if you built with `./build.py jazzy`, the default `img_id` is `livox_gen2:jazzy`):
 
 ```bash
 cd sensors/lidars/livox_gen2/examples
-./run_docker_container.sh livox_gen2:jazzy automatic --example 1
+./run_docker_container.sh livox_gen2:jazzy automatic
 ```
 
-If you prefer manual mode:
+Example 2 in manual mode:
 
 ```bash
 cd sensors/lidars/livox_gen2/examples
-./run_docker_container.sh livox_gen2:jazzy manual --example 2
+# In docker_compose_base.yaml:
+# - comment out example_1 volume lines
+# - uncomment example_2 volume lines
+./run_docker_container.sh livox_gen2:jazzy manual
 docker compose exec -it livox_gen2_srvc bash
-bash /tmp/run_launch_in_terminal.sh
+ros2 launch livox_ros_driver2 sensor.launch.py
 ```
 
-This example is also prepared to run graphical applications from the container and display them on the host through X11/XWayland.
+GUI flow is automatic:
+- If `DISPLAY` is defined on the host, `run_docker_container.sh` adds `docker_compose_gui.yaml` and runs `xhost +local:`.
+- If `DISPLAY` is not defined, the container starts headless (without X11 mount).
 
-The `run_docker_container.sh` script allows configuring variables through `--env KEY=VALUE`.
+Runtime environment variables are defined in `examples/docker_compose_base.yaml`, under `environment`.
+In particular, `sensor.launch.py` uses:
 
-Variables with default values in this example:
+- `ROBOT_NAME` (required by launch)
+- `PARAMS_FILE` (required by launch; fixed to `/tmp/params.yaml` in compose)
+- `NAMESPACE` (optional)
+- `TOPIC_REMAPPINGS` (optional, remapping string `OLD:=NEW,OLD:=NEW,...`)
+- `NODE_OPTIONS` (optional, `kvs` format: `key=value,key=value,...`)
+- `LOGGING_OPTIONS` (optional, `kvs` format: `key=value,key=value,...`)
 
-- `NAMESPACE` (default: empty)
-- `ROBOT_NAME` (default: `robot`)
-- `ROS_DOMAIN_ID` (default: `11`)
-- `NODE_OPTIONS` (default: `name=livox_gen2_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0`)
-- `LOGGING_OPTIONS` (default: `log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true`)
-
-`NODE_OPTIONS` and `LOGGING_OPTIONS` are `kvs` (key-value-string) variables, i.e., a string composed of `key=value` pairs separated by commas.
-
-Additional variables supported by the script:
-
-- `TOPIC_REMAPPINGS`: remapping string in `OLD:=NEW` format, with comma-separated pairs.
-- `ROS_LOCALHOST_ONLY=1|0` (ROS2 Humble and earlier, no default value)
-- `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST|SUBNET|OFF|SYSTEM_DEFAULT` (ROS2 Jazzy and later, no default value)
-- `ROS_STATIC_PEERS='192.168.0.1;remote.com'` (ROS2 Jazzy and later, no default value)
-
-There are variables that cannot be configured with `--env` in this flow:
-
-- `RMW_IMPLEMENTATION`: fixed in `examples/docker_compose_base.yaml` as `rmw_cyclonedds_cpp`.
-- `CYCLONEDDS_URI`: fixed in `examples/docker_compose_base.yaml`.
-- `PARAMS_FILE`: fixed in `examples/docker_compose_base.yaml`. It points to the selected YAML file mounted as `/tmp/params.yaml`.
-- `USER_CONFIG_FILE_HOST`: selected internally by `run_docker_container.sh` from `--example`.
-- `PARAMS_FILE_HOST`: selected internally by `run_docker_container.sh` from `--example`.
-- `IMG_ID`: taken from the script positional argument `<img_id>`.
-- `ENV_FILE`: managed internally by the script. It is the temporary `.env` file that `docker compose` loads through `env_file` (in `examples/docker_compose_base.yaml`) to pass environment variables to the container of service `livox_gen2_srvc`.
+Other variables used in this example:
+- `ROS_DOMAIN_ID`
+- `RMW_IMPLEMENTATION` (fixed to `rmw_cyclonedds_cpp`)
+- `CYCLONEDDS_URI` (fixed to `examples/cyclonedds_config.xml`)
 
 CycloneDDS configuration used in this example is defined in `examples/cyclonedds_config.xml`.
 
-The launch flow keeps the current JSON/YAML placeholder replacement behavior:
-- JSON files can contain `{{robot_prefix}}`.
-- in this flow, `run_docker_container.sh` mounts the selected JSON as `/tmp/user_config.json` according to `--example`.
-- `user_config_path` in `PARAMS_FILE` must point to `/tmp/user_config.json`.
-- `run_launch.sh` resolves `{{robot_prefix}}` in the JSON pointed by `user_config_path` and updates `user_config_path` in a temporary YAML when needed.
-
-Example execution with overrides:
-
-```bash
-./run_docker_container.sh livox_gen2:jazzy automatic --example 2 \
-  --env ROBOT_NAME=robot1 \
-  --env ROS_DOMAIN_ID=21 \
-  --env ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
-```
+The launch flow supports templates in the user JSON:
+- `sensor.launch.py` reads `PARAMS_FILE`, extracts `user_config_path`, and renders that JSON with Jinja2 using `robot_prefix` (derived from `ROBOT_NAME`).
+- Undefined Jinja2 variables fail fast (`StrictUndefined`).
+- If rendering does not change content, the original `PARAMS_FILE` is used.
+- If rendering changes content, launch generates and uses:
+  - `/tmp/livox_config_YYYYMMDD.json`
+  - `/tmp/livox_params_YYYYMMDD.yaml`
 
 To see all available options:
 
