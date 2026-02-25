@@ -22,6 +22,8 @@ services:
       - ${PARAMS_FILE:?PARAMS_FILE is required}:/tmp/params.yaml:ro
       - ./run_launch.sh:/tmp/run_launch.sh:ro
       - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
+    devices:
+      - /dev/dri:/dev/dri
     device_cgroup_rules:
       - "c 188:* rwm" # 188 is ttyUSB devices
     # Environment variables passed to the container.

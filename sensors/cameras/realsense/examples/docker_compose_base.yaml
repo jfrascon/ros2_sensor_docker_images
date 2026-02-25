@@ -22,6 +22,8 @@ services:
       - ./realsense_params.yaml:/tmp/params.yaml:ro
       - ./run_launch.sh:/tmp/run_launch.sh:ro
       - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
+    devices:
+      - /dev/dri:/dev/dri
     device_cgroup_rules:
       - "c 81:* rwm" # 81 is video4linux
       - "c 189:* rwm" # 189 is usb_device

@@ -47,6 +47,8 @@ services:
       - ${UM_PARAMS_FILE}:/tmp/params.yaml:ro
       - ./run_launch_umx.sh:/tmp/run_launch.sh:ro
       - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+    devices:
+      - /dev/dri:/dev/dri
     device_cgroup_rules:
       - "c 188:* rwm" # 188 is ttyUSB devices
     # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
@@ -70,6 +72,8 @@ services:
       - ${LIVOX_PARAMS_FILE}:/tmp/params.yaml:ro
       - ./run_launch_livox_gen2.sh:/tmp/run_launch.sh:ro
       - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+    devices:
+      - /dev/dri:/dev/dri
     # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
     environment:
       <<: *common-environment
@@ -87,6 +91,8 @@ services:
       - ${ROBOSENSE_CONFIG_FILE}:/tmp/config.yaml:ro
       - ./run_launch_robosense.sh:/tmp/run_launch.sh:ro
       - ${CYCLONEDDS_CONFIG_SOURCE}:/tmp/cyclonedds_config.xml:ro
+    devices:
+      - /dev/dri:/dev/dri
     # Keep these values here because they are coupled to volume-mounted paths and middleware selection.
     environment:
       <<: *common-environment

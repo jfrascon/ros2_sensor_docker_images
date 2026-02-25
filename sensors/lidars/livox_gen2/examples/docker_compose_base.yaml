@@ -16,6 +16,8 @@ services:
       - ${PARAMS_FILE_HOST:?PARAMS_FILE_HOST is required}:/tmp/params.yaml:ro
       - ./run_launch.sh:/tmp/run_launch.sh:ro
       - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
+    devices:
+      - /dev/dri:/dev/dri
     # Environment variables passed to the container.
     # Keep PARAMS_FILE explicit here because it must match the path defined in 'volumes' above.
     # This improves visibility and avoids hiding this fixed mapping inside the external .env file.
