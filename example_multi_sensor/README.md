@@ -131,6 +131,6 @@ Note on the scope of these example files:
 
 ## References
 
-- `sensors/imus/umx/README.md`
-- `sensors/lidars/livox_gen2/README.md`
-- `sensors/lidars/robosense/README.md`
+- [UMX README](../sensors/imus/umx/README.md)
+- [Livox Gen2 README](../sensors/lidars/livox_gen2/README.md)
+- [RoboSense README](../sensors/lidars/robosense/README.md)
