@@ -147,7 +147,7 @@ Check each sensor folder for examples of how to use the launch file and what par
 
 This repository targets ROS2 only.
 
-## How to Find a Sensor IP
+## How to find a sensor IP
 
 1. Connect the sensor to your computer with an RJ45 cable (directly or through a hub/switch).
 2. Run `ifconfig` and identify the network interface connected to the sensor.
