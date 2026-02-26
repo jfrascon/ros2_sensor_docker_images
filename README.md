@@ -76,7 +76,7 @@ This repository is organized to provide a modular approach to building Docker im
   - Standardized launch files for consistent sensor integration
   - Example configurations and Docker setups to get started quickly
 
-**ROS2 distributions currently supported** (see `base_docker_files/ros_distros.yaml`):
+**ROS2 distributions currently supported** (see [`base_docker_files/ros_distros.yaml`](base_docker_files/ros_distros.yaml)):
 
 | ROS2 codename       | Ubuntu base | Notes             |
 | ------------------- | ----------- | ----------------- |
@@ -101,7 +101,7 @@ python3 sensors/imus/umx/examples/build.py jazzy
 
 ### Building a multi-sensor example image
 
-See `example_multi_sensor/README.md`. The example shows how a user can create a custom Dockerfile that
+See [`example_multi_sensor/README.md`](example_multi_sensor/README.md). The example shows how a user can create a custom Dockerfile that
 clones this repository and reuses existing `setup.sh` and `compile.sh` scripts for multiple sensors.
 
 ```bash
@@ -112,12 +112,12 @@ python3 example_multi_sensor/build.py ubuntu:24.04 jazzy multi_sensor:jazzy
 
 Each image follows a common structure:
 
-1. Base system install (`base_docker_files/install_base_system.sh`).
-2. ROS2 install (`base_docker_files/install_ros.sh`).
+1. Base system install ([`base_docker_files/install_base_system.sh`](base_docker_files/install_base_system.sh)).
+2. ROS2 install ([`base_docker_files/install_ros.sh`](base_docker_files/install_ros.sh)).
 3. Sensor setup (`sensors/<type>/<name>/setup.sh`).
-4. rosdep + colcon mixin/metadata (`base_docker_files/rosdep_init_update_install.sh` and `colcon_mixin_metadata.sh`).
+4. rosdep + colcon mixin/metadata ([`base_docker_files/rosdep_init_update_install.sh`](base_docker_files/rosdep_init_update_install.sh) and [`base_docker_files/colcon_mixin_metadata.sh`](base_docker_files/colcon_mixin_metadata.sh)).
 5. Compile (`sensors/<type>/<name>/compile.sh`).
-6. Install entrypoint (`base_docker_files/entrypoint.sh`).
+6. Install entrypoint ([`base_docker_files/entrypoint.sh`](base_docker_files/entrypoint.sh)).
 
 The example Dockerfiles in `examples/` follow this pattern and can be copied to new projects.
 

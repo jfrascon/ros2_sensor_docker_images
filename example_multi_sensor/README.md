@@ -17,31 +17,31 @@ The layout is intended as a reference you can adapt, not a mandatory template.
 
 ## Key files and responsibilities
 
-- `build.py`: helper to build the Docker image.
-- `Dockerfile`: main installation logic.
-- `run_docker_container.sh`: helper to run the example in `automatic` or `manual` mode.
-- `docker_compose_base.yaml`: base services, mounts, and common runtime environment.
-- `docker_compose_mode_automatic.yaml`: automatic launch commands.
-- `docker_compose_mode_manual.yaml`: manual mode (`bash` in each container).
-- `docker_compose_gui.yaml`: optional GUI fragment, added only when `DISPLAY` is available.
+- [`build.py`](build.py): helper to build the Docker image.
+- [`Dockerfile`](Dockerfile): main installation logic.
+- [`run_docker_container.sh`](run_docker_container.sh): helper to run the example in `automatic` or `manual` mode.
+- [`docker_compose_base.yaml`](docker_compose_base.yaml): base services, mounts, and common runtime environment.
+- [`docker_compose_mode_automatic.yaml`](docker_compose_mode_automatic.yaml): automatic launch commands.
+- [`docker_compose_mode_manual.yaml`](docker_compose_mode_manual.yaml): manual mode (`bash` in each container).
+- [`docker_compose_gui.yaml`](docker_compose_gui.yaml): optional GUI fragment, added only when `DISPLAY` is available.
 
 ## Compose structure
 
 The deployment is created by combining compose files:
 
-- Base compose: `docker_compose_base.yaml`
-- Mode compose: `docker_compose_mode_automatic.yaml` or `docker_compose_mode_manual.yaml`
-- Optional GUI compose: `docker_compose_gui.yaml`
+- Base compose: [`docker_compose_base.yaml`](docker_compose_base.yaml)
+- Mode compose: [`docker_compose_mode_automatic.yaml`](docker_compose_mode_automatic.yaml) or [`docker_compose_mode_manual.yaml`](docker_compose_mode_manual.yaml)
+- Optional GUI compose: [`docker_compose_gui.yaml`](docker_compose_gui.yaml)
 
 In this example, up to three compose files are chained (`base + mode + optional gui`) so users can experiment with different run styles.
 
-`run_docker_container.sh` assembles these files automatically.
+[`run_docker_container.sh`](run_docker_container.sh) assembles these files automatically.
 
 ## Runtime variables
 
 ### Common variables in the anchor
 
-`docker_compose_base.yaml` defines shared values in `x-common-environment`:
+[`docker_compose_base.yaml`](docker_compose_base.yaml) defines shared values in `x-common-environment`:
 
 - `NAMESPACE=multisensor`
 - `ROBOT_NAME=robot`
@@ -56,14 +56,18 @@ The same compose file defines sensor-specific values directly in each service:
 
 - `umx_srvc`:
   - `UM_MODEL=7`
-  - `UM_PARAMS_FILE=./um7_params.yaml`
+  - `PARAMS_FILE=/tmp/params.yaml`
 - `livox_gen2_srvc`:
-  - `LIVOX_USER_CONFIG_FILE=./livox_mid360.json`
-  - `LIVOX_PARAMS_FILE=./livox_mid360.yaml`
+  - `PARAMS_FILE=/tmp/params.yaml`
 - `robosense_srvc`:
-  - `ROBOSENSE_CONFIG_FILE=./robosense_helios_16p_config.yaml`
+  - `CONFIG_FILE=/tmp/config.yaml`
 
-Those values are also reflected in compose mounts.
+Those runtime values are coupled to the files mounted in each service (`./*.yaml`/`./*.json` -> `/tmp/...`).
+
+Note on naming:
+
+- `PARAMS_FILE` is used for a YAML file that follows the ROS2 parameters convention (parameters declared under `ros__parameters`).
+- `CONFIG_FILE` (for example in `robosense_srvc`) is used for a sensor vendor configuration YAML that does not follow ROS2 parameter-file conventions; it is simply a YAML file in the format required by that vendor driver.
 
 ## Build and run
 
@@ -113,7 +117,7 @@ ros2 launch rslidar_sdk sensor.launch.py
 
 ## About GUI support
 
-If `DISPLAY` is present on the host, `run_docker_container.sh` adds `docker_compose_gui.yaml` and runs:
+If `DISPLAY` is present on the host, [`run_docker_container.sh`](run_docker_container.sh) adds [`docker_compose_gui.yaml`](docker_compose_gui.yaml) and runs:
 
 ```bash
 xhost +local:
@@ -125,9 +129,9 @@ If `DISPLAY` is not set, the deployment runs headless.
 
 Note on the scope of these example files:
 
-- `run_docker_container.sh` and the split compose files (`docker_compose_mode_automatic.yaml`, `docker_compose_mode_manual.yaml`, `docker_compose_gui.yaml`) are intended for testing and experimentation.
+- [`run_docker_container.sh`](run_docker_container.sh) and the split compose files ([`docker_compose_mode_automatic.yaml`](docker_compose_mode_automatic.yaml), [`docker_compose_mode_manual.yaml`](docker_compose_mode_manual.yaml), [`docker_compose_gui.yaml`](docker_compose_gui.yaml)) are intended for testing and experimentation.
 - In production, the typical approach is to define your own compose setup with your final sensor configuration, startup command, and GUI settings (if needed).
-- In that case, you usually do not need `run_docker_container.sh` or a split by `automatic/manual/gui` modes.
+- In that case, you usually do not need [`run_docker_container.sh`](run_docker_container.sh) or a split by `automatic/manual/gui` modes.
 
 ## References
 

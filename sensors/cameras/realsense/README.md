@@ -4,20 +4,20 @@ The `realsense` folder contains the files required to install the ROS2 packages 
 Both the ROS2 packages and the `librealsense2` library are installed from source code by cloning their official repositories.
 
 Official repositories:
-- RealSense ROS2 packages: `https://github.com/realsenseai/realsense-ros`
-- librealsense2 library: `https://github.com/realsenseai/librealsense`
+- RealSense ROS2 packages: [https://github.com/realsenseai/realsense-ros](https://github.com/realsenseai/realsense-ros)
+- librealsense2 library: [https://github.com/realsenseai/librealsense](https://github.com/realsenseai/librealsense)
 
-The `setup.sh`, `install_librealsense2_from_source.sh`, `compile.sh`, and `sensor.launch.py` scripts are designed to be used from a `Dockerfile` and automate image building.
+The [`setup.sh`](setup.sh), [`install_librealsense2_from_source.sh`](install_librealsense2_from_source.sh), [`compile.sh`](compile.sh), and [`sensor.launch.py`](sensor.launch.py) scripts are designed to be used from a `Dockerfile` and automate image building.
 
-The guide [how_to_patch_the_kernel_and_install_librealsense2_in_host_operating_system.md](how_to_patch_the_kernel_and_install_librealsense2_in_host_operating_system.md) summarizes the installation options for `librealsense2` and provides practical criteria to choose the most suitable one depending on the environment and use case.
+The guide [how_to_patch_the_kernel_and_install_librealsense2_in_host_operating_system.md](doc/how_to_patch_the_kernel_and_install_librealsense2_in_host_operating_system.md) summarizes the installation options for `librealsense2` and provides practical criteria to choose the most suitable one depending on the environment and use case.
 
-In addition, the file [examples.md](examples.md) gathers practical examples to make environment setup and validation easier.
+In addition, the file [examples.md](doc/examples.md) gathers practical examples to make environment setup and validation easier.
 
 ## Usage example
 
 To illustrate how to use the files mentioned above, an example has been created in the `examples/` folder, where a `Dockerfile` is provided to build an image that allows running the ROS2 packages for RealSense cameras inside a Docker container.
 
-The process is designed to be convenient for the user: just run `examples/build.py` and indicate the ROS2 distro you want to use (`humble` or `jazzy`).
+The process is designed to be convenient for the user: just run [`examples/build.py`](examples/build.py) and indicate the ROS2 distro you want to use (`humble` or `jazzy`).
 
 Example:
 ```bash
@@ -32,13 +32,13 @@ The script includes optional flags that may be useful (for example, cache contro
 
 In `examples/` there are two files that control which versions are cloned and how `librealsense2` is compiled:
 
-- `refs.txt`: defines the remote references (tags/branches) cloned for:
+- [`refs.txt`](examples/refs.txt): defines the remote references (tags/branches) cloned for:
   - `librealsense2`
   - `realsense-ros`
   - `ros2_launch_helpers`
-- `librealsense2_compile_flags.txt`: defines CMake options to compile `librealsense2`.
+- [`librealsense2_compile_flags.txt`](examples/librealsense2_compile_flags.txt): defines CMake options to compile `librealsense2`.
 
-Modify `refs.txt` if you want to:
+Modify [`refs.txt`](examples/refs.txt) if you want to:
 - pin a specific version for stability or reproducibility,
 - test a newer version (feature/bugfix),
 - align compatible versions between `realsense-ros` and `librealsense2`.
@@ -52,7 +52,7 @@ ros2_launch_helpers main
 
 Keep in mind that the `librealsense2` version and the release of ROS2 packages in the `realsense-ros` repository are linked: not every version combination is compatible. To know which `librealsense2` version corresponds to a specific `realsense-ros` release, the most reliable way is to review [realsense2_camera/CMakeLists.txt](https://github.com/realsenseai/realsense-ros/blob/ros2-master/realsense2_camera/CMakeLists.txt) (use the file from the specific `realsense-ros` release you need; this link points to `ros2-master`) and identify the version indicated in `find_package(realsense2 X.Y.Z)`.
 
-Modify `librealsense2_compile_flags.txt` if you want to:
+Modify [`librealsense2_compile_flags.txt`](examples/librealsense2_compile_flags.txt) if you want to:
 - enable/disable tools or examples (`BUILD_TOOLS`, `BUILD_GRAPHICAL_EXAMPLES`, `BUILD_EXAMPLES`),
 - adjust backend (`FORCE_RSUSB_BACKEND`),
 - enable or disable CUDA (`BUILD_WITH_CUDA`).
@@ -92,15 +92,15 @@ BUILD_TOOLS=ON
 FORCE_RSUSB_BACKEND=ON
 ```
 
-Once the image is built with `examples/build.py`, you can start the container in two modes using `examples/run_docker_container.sh`:
+Once the image is built with [`examples/build.py`](examples/build.py), you can start the container in two modes using [`examples/run_docker_container.sh`](examples/run_docker_container.sh):
 
 - `automatic` mode: the container starts and automatically runs the ROS2 driver launch.
 - `manual` mode: the container starts without launching the driver, so you can enter a shell and run it manually.
 
 Note on the scope of these example files:
-- `run_docker_container.sh` and the compose fragments (`docker_compose_mode_automatic.yaml`, `docker_compose_mode_manual.yaml`, `docker_compose_gui.yaml`) are intended for testing and experimentation.
+- [`run_docker_container.sh`](examples/run_docker_container.sh) and the compose fragments ([`docker_compose_mode_automatic.yaml`](examples/docker_compose_mode_automatic.yaml), [`docker_compose_mode_manual.yaml`](examples/docker_compose_mode_manual.yaml), [`docker_compose_gui.yaml`](examples/docker_compose_gui.yaml)) are intended for testing and experimentation.
 - In production, the typical approach is to define your own single `docker compose` file with your camera configuration, startup command, and GUI setup (if needed).
-- In that case you do not need `run_docker_container.sh` or split compose files by `automatic/manual/gui` mode.
+- In that case you do not need [`run_docker_container.sh`](examples/run_docker_container.sh) or split compose files by `automatic/manual/gui` mode.
 
 The script only receives positional arguments:
 - `<img_id>`
@@ -123,13 +123,13 @@ ros2 launch realsense2_camera sensor.launch.py
 ```
 
 GUI flow is automatic:
-- If `DISPLAY` is defined on the host, `run_docker_container.sh` adds `docker_compose_gui.yaml` and runs `xhost +local:`.
+- If `DISPLAY` is defined on the host, [`run_docker_container.sh`](examples/run_docker_container.sh) adds [`docker_compose_gui.yaml`](examples/docker_compose_gui.yaml) and runs `xhost +local:`.
 - If `DISPLAY` is not defined, the container starts headless (without X11 mount).
 
 This example is also prepared to run graphical applications from the container (for example `rviz2` and `realsense-viewer`) and display them on the host through X11/XWayland. Keep in mind that `realsense-viewer` will only be available if `librealsense2` was compiled with `BUILD_EXAMPLES=ON` and `BUILD_GRAPHICAL_EXAMPLES=ON`.
 
-Runtime environment variables are configured in `examples/docker_compose_base.yaml`, under `environment`.
-In particular, `sensor.launch.py` uses:
+Runtime environment variables are configured in [`examples/docker_compose_base.yaml`](examples/docker_compose_base.yaml), under `environment`.
+In particular, [`sensor.launch.py`](sensor.launch.py) uses:
 
 - `ROBOT_NAME` (required by launch)
 - `PARAMS_FILE` (required by launch; fixed to `/tmp/params.yaml` in compose)
@@ -141,13 +141,13 @@ In particular, `sensor.launch.py` uses:
 Other variables used in this example:
 - `ROS_DOMAIN_ID`
 - `RMW_IMPLEMENTATION` (fixed to `rmw_cyclonedds_cpp`)
-- `CYCLONEDDS_URI` (fixed to `examples/cyclonedds_config.xml`)
+- `CYCLONEDDS_URI` (fixed to [`examples/cyclonedds_config.xml`](examples/cyclonedds_config.xml))
 
 Topics defined by the node in source code are private (they use `~`). Therefore, if you want to remap one of those topics, you must use the full path on the left-hand side. On the right-hand side, using `~` is optional. If you use `~` on the right-hand side, the remap will include the node name, i.e., `<NAMESPACE>/<ROBOT_NAME>/<NODE_NAME>/<NEW_TOPIC>`. If you do not use `~` on the right-hand side and the new topic does not start with `/`, the remap will resolve to `<NAMESPACE>/<ROBOT_NAME>/<NEW_TOPIC>`. If the new topic starts with `/`, it is kept as is (global remap):
 
 `<NAMESPACE>/<ROBOT_NAME>/<NODE_NAME>/<OLD_TOPIC>:=~/<NEW_TOPIC>`
 
-Example in `docker_compose_base.yaml`:
+Example in [`docker_compose_base.yaml`](examples/docker_compose_base.yaml):
 
 ```yaml
 TOPIC_REMAPPINGS: "/test/myrobot/realsense_camera/color/camera_info:=~/color/ci"
@@ -159,19 +159,19 @@ Since by default (if you do not use `TOPIC_REMAPPINGS`) topics are private and t
 
 If you use `TOPIC_REMAPPINGS`, you can choose any node name you consider appropriate, including `_node` suffixes (for example `front_camera_node`), as long as in remapping you expose topics with names focused on the camera/device.
 
-Example in `docker_compose_base.yaml`:
+Example in [`docker_compose_base.yaml`](examples/docker_compose_base.yaml):
 
 ```yaml
 NODE_OPTIONS: "name=realsense_camera_node,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
 TOPIC_REMAPPINGS: "/test/myrobot/realsense_camera_node/color/camera_info:=/test/myrobot/realsense_camera/color/camera_info"
 ```
 
-You can set that remapping by editing `TOPIC_REMAPPINGS` in `docker_compose_base.yaml`.
+You can set that remapping by editing `TOPIC_REMAPPINGS` in [`docker_compose_base.yaml`](examples/docker_compose_base.yaml).
 
-CycloneDDS configuration used in this example is defined in `examples/cyclonedds_config.xml`.
+CycloneDDS configuration used in this example is defined in [`examples/cyclonedds_config.xml`](examples/cyclonedds_config.xml).
 
-Camera parameter configuration is defined in `examples/realsense_params.yaml`.
-That file may use `$(var robot_prefix)` (for example in `camera_name`), and `sensor.launch.py` resolves it by setting `robot_prefix` in the ROS2 launch context before starting the node.
+Camera parameter configuration is defined in [`examples/realsense_params.yaml`](examples/realsense_params.yaml).
+That file may use `$(var robot_prefix)` (for example in `camera_name`), and [`sensor.launch.py`](sensor.launch.py) resolves it by setting `robot_prefix` in the ROS2 launch context before starting the node.
 
 To see all available options:
 
