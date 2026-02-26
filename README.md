@@ -19,6 +19,7 @@
     - [Entrypoint](#entrypoint)
     - [Custom launch file](#custom-launch-file)
   - [ROS1 is not supported](#ros1-is-not-supported)
+  - [How to Find a Sensor IP](#how-to-find-a-sensor-ip)
 
 ---
 
@@ -41,17 +42,23 @@ services:
     privileged: false
     ipc: host
     volumes:
-      - ./robosense_helios_16p_config.yaml:/tmp/config.yaml:ro
+      - ./example_1.front_robosense_helios_16p_config.yaml:/tmp/config.yaml:ro
+      # - ./example_2.front_back_robosense_helios_16p_config.yaml:/tmp/config.yaml:ro
       - ./cyclonedds_config.xml:/tmp/cyclonedds_config.xml:ro
     environment:
+      TERM: xterm-256color
+      RCUTILS_LOGGING_BUFFERED_STREAM: "0"
+      RCUTILS_LOGGING_USE_STDOUT: "1"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+      RCUTILS_CONSOLE_OUTPUT_FORMAT: "[{severity} {time}] [{name}]: {message} ({file_name}:L{line_number})"
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
+      ROS_DOMAIN_ID: "11"
       NAMESPACE: test # Optional
       ROBOT_NAME: robot # Required
       CONFIG_FILE: /tmp/config.yaml # Required
-      NODE_OPTIONS: "name=robosense_lidar_ros2_driver,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
+      NODE_OPTIONS: "name=robosense_lidar_ros2_handler,output=screen,emulate_tty=True,respawn=False,respawn_delay=0.0"
       LOGGING_OPTIONS: "log-level=info,disable-stdout-logs=true,disable-rosout-logs=false,disable-external-lib-logs=true"
-      ROS_DOMAIN_ID: "11"
-      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
-      CYCLONEDDS_URI: file:///tmp/cyclonedds_config.xml
     command: ["ros2", "launch", "rslidar_sdk", "sensor.launch.py"]
 ```
 
@@ -86,6 +93,7 @@ single-driver image using the scripts under that sensor folder.
 Examples:
 
 ```bash
+python3 sensors/cameras/realsense/examples/build.py jazzy
 python3 sensors/lidars/robosense/examples/build.py jazzy
 python3 sensors/lidars/livox_gen2/examples/build.py jazzy
 python3 sensors/imus/umx/examples/build.py jazzy
@@ -138,3 +146,19 @@ Check each sensor folder for examples of how to use the launch file and what par
 ## ROS1 is not supported
 
 This repository targets ROS2 only.
+
+## How to Find a Sensor IP
+
+1. Connect the sensor to your computer with an RJ45 cable (directly or through a hub/switch).
+2. Run `ifconfig` and identify the network interface connected to the sensor.
+3. Note the MAC address of that interface (example: `enx00e04c68020d` with MAC `00:e0:4c:68:02:0d`).
+4. Open the network manager and select that interface.
+5. Optionally verify you selected the correct interface by checking that its MAC address matches the one from `ifconfig`.
+6. Set that interface to `Automatic (DHCP)`.
+7. Open a terminal and start Wireshark. If needed, install it first: `sudo apt-get install -y wireshark`.
+8. In Wireshark, select the interface and start traffic capture.
+9. Inspect captured packets and find messages coming from the LiDAR that show its IP address.
+10. Configure your computer interface with an IP in the same subnet/range as the LiDAR.
+11. Verify connectivity with `ping <LiDAR_IP>`.
+
+![How to find sensor IP](doc/images/find_sensor_ip.png)
